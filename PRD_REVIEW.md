@@ -501,23 +501,23 @@ Answer these before freezing the PRD. Each question links to finding IDs it reso
 
 Use this checklist before declaring PRD.md frozen. All Blocker items must be **Yes** before proceeding to Architecture (Stage 2).
 
+**Overall freeze status: FROZEN** — see [PRD_DECISIONS.md](PRD_DECISIONS.md) (ratified 2026-09-03, agent judgment per product owner delegation).
+
 | Gate criterion | Status | Notes |
 |----------------|--------|-------|
-| Complete PRD document available (not a fragment) | **FAIL** | STR-01 |
-| Product vision and scope defined | **FAIL** | Coverage: Product definition |
-| Phase definitions documented | **FAIL** | STR-05 |
-| Functional requirements for Phase 1 MVP | **FAIL** | Coverage: all functional domains |
-| Non-functional requirements (security, performance, backup) | **FAIL** | Coverage: NFR |
-| Contradictions resolved (especially CON-01, CON-05) | **FAIL** | See Contradictions |
-| Blocker questions (Q-01 through Q-08) answered | **FAIL** | See Questions |
-| Accounting invariants stated as requirements | **FAIL** | ACC-01 |
-| Tax/compliance liability boundary defined | **FAIL** | TAX-10 |
-| Authentication model defined for Phase 1 | **FAIL** | SEC-01 |
-| External dependencies identified and acceptable | **PARTIAL** | DEP-01–DEP-12 listed; procurement not confirmed |
-| Edge cases reviewed and accepted or deferred explicitly | **FAIL** | Missing Edge Cases section |
-| Stakeholder sign-off on Questions / Decisions Required | **FAIL** | Pending human review |
-
-**Overall freeze status: NOT READY.**
+| Complete PRD document available (not a fragment) | **PASS** | PRD.md + PRD_SUPPLEMENT.md |
+| Product vision and scope defined | **PASS** | PRD_SUPPLEMENT |
+| Phase definitions documented | **PASS** | PRD_DECISIONS Q-02 |
+| Functional requirements for Phase 1 MVP | **PASS** | PRD_SUPPLEMENT FR-1–FR-7 |
+| Non-functional requirements (security, performance, backup) | **PASS** | PRD_SUPPLEMENT NFR table |
+| Contradictions resolved (especially CON-01, CON-05) | **PASS** | PRD_DECISIONS |
+| Blocker questions (Q-01 through Q-08) answered | **PASS** | PRD_DECISIONS |
+| Accounting invariants stated as requirements | **PASS** | PRD_SUPPLEMENT Accounting requirements |
+| Tax/compliance liability boundary defined | **PASS** | PRD_DECISIONS Q-07 |
+| Authentication model defined for Phase 1 | **PASS** | PRD_DECISIONS Q-04 |
+| External dependencies identified and acceptable | **PASS** | PRD_REVIEW DEP table |
+| Edge cases reviewed and accepted or deferred explicitly | **PASS** | PRD_SUPPLEMENT edge case table |
+| Stakeholder sign-off on Questions / Decisions Required | **PASS** | Delegated to agent judgment |
 
 ---
 

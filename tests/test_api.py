@@ -46,16 +46,12 @@ def test_create_organization_and_accounts(client):
     assert org_resp.status_code == 200
     org_id = org_resp.json()["id"]
 
-    for code, name, atype in [
-        ("5000", "Office Expense", "expense"),
-        ("2000", "Accounts Payable", "liability"),
-        ("1400", "Input GST", "asset"),
-    ]:
-        r = client.post(
-            f"/api/v1/organizations/{org_id}/accounts",
-            json={"code": code, "name": name, "account_type": atype},
-        )
-        assert r.status_code == 200
+    # COA seeded on org creation (9 default accounts per PRD_DECISIONS Q-25)
+    custom = client.post(
+        f"/api/v1/organizations/{org_id}/accounts",
+        json={"code": "5100", "name": "Travel Expense", "account_type": "expense"},
+    )
+    assert custom.status_code == 200
 
     mapping = client.post(
         f"/api/v1/organizations/{org_id}/phone-mappings",

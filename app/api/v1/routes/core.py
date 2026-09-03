@@ -9,6 +9,7 @@ from app.core.exceptions import IdempotencyConflict, ValidationError
 from app.core.logging import OrganizationContext
 from app.core.security import create_access_token, verify_password
 from app.domain.accounting.engine import AccountingEngine
+from app.domain.organizations.coa_seed import seed_chart_of_accounts
 from app.models.entities import ChartOfAccount, Organization, OrganizationMembership, User
 from app.schemas.common import (
     ChartOfAccountCreate,
@@ -35,6 +36,8 @@ def health():
 def create_organization(body: OrganizationCreate, db: Session = Depends(get_db)):
     org = Organization(name=body.name, gstin=body.gstin)
     db.add(org)
+    db.flush()
+    seed_chart_of_accounts(db, org.id)
     db.commit()
     db.refresh(org)
     return org

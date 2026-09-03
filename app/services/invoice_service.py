@@ -37,12 +37,16 @@ class InvoiceService:
         input_tax_account_id: UUID | None = None,
     ) -> Invoice:
         party = self._get_or_create_party(ctx, extraction)
+        inv_number = extraction.invoice_number or "UNKNOWN"
+        inv_date = extraction.invoice_date or date.today()
+        self._check_duplicate_invoice(ctx, party.id, inv_number, inv_date)
+
         inv = Invoice(
             organization_id=ctx.organization_id,
             party_id=party.id,
             invoice_type=InvoiceType(extraction.invoice_type),
-            invoice_number=extraction.invoice_number or "UNKNOWN",
-            invoice_date=extraction.invoice_date or date.today(),
+            invoice_number=inv_number,
+            invoice_date=inv_date,
             subtotal=extraction.subtotal,
             tax_total=extraction.tax_total,
             total=extraction.total,
@@ -196,3 +200,26 @@ class InvoiceService:
         if not inv:
             raise NotFoundError("Invoice not found")
         return inv
+
+    def _check_duplicate_invoice(
+        self,
+        ctx: OrganizationContext,
+        party_id: UUID,
+        invoice_number: str,
+        invoice_date: date,
+    ) -> None:
+        existing = (
+            self.db.query(Invoice)
+            .filter(
+                Invoice.organization_id == ctx.organization_id,
+                Invoice.party_id == party_id,
+                Invoice.invoice_number == invoice_number,
+                Invoice.invoice_date == invoice_date,
+                Invoice.deleted_at.is_(None),
+            )
+            .first()
+        )
+        if existing:
+            raise ValidationError(
+                f"Duplicate invoice: {invoice_number} from party on {invoice_date}"
+            )
