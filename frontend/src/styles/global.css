@@ -321,10 +321,15 @@ select {
   color: var(--muted);
 }
 
-.muted-hint {
-  font-size: 0.75rem;
-  color: var(--sidebar-text);
-  margin-top: 0.35rem;
+.action-cell {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
 }
 
 .toolbar {

@@ -33,6 +33,18 @@ export function Layout() {
             Payments
           </NavLink>
           <NavLink
+            to="/sales"
+            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+          >
+            Sales
+          </NavLink>
+          <NavLink
+            to="/notes"
+            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+          >
+            Notes
+          </NavLink>
+          <NavLink
             to="/bank"
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >

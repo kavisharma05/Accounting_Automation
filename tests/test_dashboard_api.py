@@ -155,3 +155,24 @@ def test_list_parties_and_accounts(dashboard_client):
     codes = [a["code"] for a in accounts.json()]
     assert "1010" in codes
     assert "2000" in codes
+
+
+def test_create_party(dashboard_client):
+    client, org, token = dashboard_client
+    resp = client.post(
+        f"/api/v1/organizations/{org.id}/parties",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "New Customer Ltd", "party_type": "customer", "gstin": "29AABCU9603R1ZX"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "New Customer Ltd"
+
+
+def test_list_invoices_by_type(dashboard_client):
+    client, org, token = dashboard_client
+    resp = client.get(
+        f"/api/v1/organizations/{org.id}/invoices?invoice_type=purchase",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 200
+    assert all(i["invoice_type"] == "purchase" for i in resp.json())

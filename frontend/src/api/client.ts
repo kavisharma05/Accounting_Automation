@@ -170,8 +170,12 @@ export async function fetchInvoices(
   orgId: string,
   token: string,
   status?: string,
+  invoiceType?: string,
 ): Promise<InvoiceRow[]> {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (invoiceType) params.set("invoice_type", invoiceType);
+  const qs = params.toString() ? `?${params.toString()}` : "";
   return request<InvoiceRow[]>(
     `/organizations/${orgId}/invoices${qs}`,
     {},
@@ -204,6 +208,18 @@ export async function fetchPayments(
 
 export async function fetchParties(orgId: string, token: string): Promise<PartyRow[]> {
   return request<PartyRow[]>(`/organizations/${orgId}/parties`, {}, token);
+}
+
+export async function createParty(
+  orgId: string,
+  token: string,
+  body: { name: string; party_type?: string; gstin?: string },
+): Promise<PartyRow> {
+  return request<PartyRow>(
+    `/organizations/${orgId}/parties`,
+    { method: "POST", body: JSON.stringify(body) },
+    token,
+  );
 }
 
 export async function fetchAccounts(orgId: string, token: string): Promise<AccountRow[]> {
@@ -317,6 +333,96 @@ export async function downloadGstr1(
     throw new ApiError(resp.status, "Failed to download GSTR-1");
   }
   return resp.blob();
+}
+
+export type SalesInvoicePayload = {
+  party_id: string;
+  invoice_number: string;
+  invoice_date: string;
+  subtotal: string;
+  tax_total?: string;
+  line_description?: string;
+};
+
+export type NotePayload = {
+  original_invoice_id: string;
+  note_number: string;
+  note_date: string;
+  subtotal: string;
+  tax_total?: string;
+  reason?: string;
+};
+
+export type EInvoiceResult = {
+  id: string;
+  invoice_id: string;
+  irn: string | null;
+  ack_no: string | null;
+  status: string;
+};
+
+export async function createSalesInvoice(
+  orgId: string,
+  token: string,
+  payload: SalesInvoicePayload,
+) {
+  return request<{ id: string; invoice_number: string; status: string; total: string }>(
+    `/organizations/${orgId}/sales-invoices`,
+    { method: "POST", body: JSON.stringify(payload) },
+    token,
+  );
+}
+
+export async function postSalesInvoice(orgId: string, token: string, invoiceId: string) {
+  return request<{ id: string; status: string; journal_entry_id: string | null }>(
+    `/organizations/${orgId}/sales-invoices/${invoiceId}/post`,
+    { method: "POST" },
+    token,
+  );
+}
+
+export async function generateEInvoice(
+  orgId: string,
+  token: string,
+  invoiceId: string,
+): Promise<EInvoiceResult> {
+  return request<EInvoiceResult>(
+    `/organizations/${orgId}/invoices/${invoiceId}/einvoice`,
+    { method: "POST" },
+    token,
+  );
+}
+
+export async function createCreditNote(orgId: string, token: string, payload: NotePayload) {
+  return request<{ id: string; note_number: string; status: string }>(
+    `/organizations/${orgId}/credit-notes`,
+    { method: "POST", body: JSON.stringify(payload) },
+    token,
+  );
+}
+
+export async function postCreditNote(orgId: string, token: string, noteId: string) {
+  return request<{ id: string; status: string }>(
+    `/organizations/${orgId}/credit-notes/${noteId}/post`,
+    { method: "POST" },
+    token,
+  );
+}
+
+export async function createDebitNote(orgId: string, token: string, payload: NotePayload) {
+  return request<{ id: string; note_number: string; status: string }>(
+    `/organizations/${orgId}/debit-notes`,
+    { method: "POST", body: JSON.stringify(payload) },
+    token,
+  );
+}
+
+export async function postDebitNote(orgId: string, token: string, noteId: string) {
+  return request<{ id: string; status: string }>(
+    `/organizations/${orgId}/debit-notes/${noteId}/post`,
+    { method: "POST" },
+    token,
+  );
 }
 
 export { ApiError };

@@ -56,6 +56,12 @@ class PartyResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PartyCreate(BaseModel):
+    name: str
+    party_type: str = "customer"
+    gstin: str | None = None
+
+
 class AccountListItem(BaseModel):
     id: UUID
     code: str

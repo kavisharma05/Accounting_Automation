@@ -7,6 +7,7 @@ from app.models.entities import (
     ApprovalRequest,
     Invoice,
     InvoiceStatus,
+    InvoiceType,
     JournalEntry,
     JournalEntryStatus,
     Party,
@@ -71,10 +72,18 @@ class DashboardService:
             ],
         }
 
-    def list_invoices(self, ctx: OrganizationContext, *, status: str | None = None) -> list[dict]:
+    def list_invoices(
+        self,
+        ctx: OrganizationContext,
+        *,
+        status: str | None = None,
+        invoice_type: str | None = None,
+    ) -> list[dict]:
         q = self.db.query(Invoice).filter(Invoice.organization_id == ctx.organization_id)
         if status:
             q = q.filter(Invoice.status == InvoiceStatus(status))
+        if invoice_type:
+            q = q.filter(Invoice.invoice_type == InvoiceType(invoice_type))
         invoices = q.order_by(Invoice.invoice_date.desc()).limit(100).all()
         result = []
         for inv in invoices:

@@ -13,12 +13,14 @@ from app.models.entities import (
     ChartOfAccount,
     Organization,
     Party,
+    PartyType,
 )
 from app.schemas.phase2 import (
     AccountListItem,
     BankAccountCreate,
     BankAccountResponse,
     CAEmailRequest,
+    PartyCreate,
     PartyResponse,
     PaymentCreate,
     PaymentResponse,
@@ -46,11 +48,12 @@ def dashboard_summary(
 def list_invoices(
     org_id: UUID,
     status: str | None = None,
+    invoice_type: str | None = None,
     db: Session = Depends(get_db),
     ctx: OrganizationContext = Depends(require_read),
 ):
     ensure_org_access(ctx, org_id)
-    return DashboardService(db).list_invoices(ctx, status=status)
+    return DashboardService(db).list_invoices(ctx, status=status, invoice_type=invoice_type)
 
 
 @router.get("/organizations/{org_id}/payments")
@@ -76,6 +79,30 @@ def list_parties(
         .order_by(Party.name)
         .all()
     )
+
+
+@router.post("/organizations/{org_id}/parties", response_model=PartyResponse)
+def create_party(
+    org_id: UUID,
+    body: PartyCreate,
+    db: Session = Depends(get_db),
+    ctx: OrganizationContext = Depends(require_write),
+):
+    ensure_org_access(ctx, org_id)
+    try:
+        party_type = PartyType(body.party_type)
+    except ValueError as exc:
+        raise HTTPException(422, "Invalid party_type") from exc
+    party = Party(
+        organization_id=org_id,
+        name=body.name,
+        party_type=party_type,
+        gstin=body.gstin,
+    )
+    db.add(party)
+    db.commit()
+    db.refresh(party)
+    return party
 
 
 @router.get("/organizations/{org_id}/accounts", response_model=list[AccountListItem])
