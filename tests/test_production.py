@@ -6,7 +6,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.models.entities  # noqa: F401
-from app.core.database import Base, get_db
 from app.core.rate_limit import RateLimiter
 from app.core.startup import validate_production_settings
 from app.main import app as fastapi_app

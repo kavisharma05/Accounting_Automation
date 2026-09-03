@@ -1,5 +1,4 @@
 from datetime import date
-from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,7 +9,10 @@ from app.api.authz import ensure_org_access, require_read, require_write
 from app.api.deps import get_db
 from app.core.exceptions import DomainError
 from app.core.logging import OrganizationContext
-from app.domain.organizations.pilot_config import get_org_account_defaults, get_sales_account_defaults
+from app.domain.organizations.pilot_config import (
+    get_org_account_defaults,
+    get_sales_account_defaults,
+)
 from app.models.entities import (
     ApprovalRequest,
     CreditNote,

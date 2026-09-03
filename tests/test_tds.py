@@ -11,7 +11,7 @@ from app.domain.organizations.coa_seed import seed_chart_of_accounts
 from app.domain.organizations.pilot_config import configure_pilot_accounts
 from app.domain.tax.default_rules import seed_default_tax_rules
 from app.domain.tax.engine import TaxEngine
-from app.models.entities import Organization, Party, PartyType, Payment
+from app.models.entities import Party, PartyType, Payment
 from app.services.compliance_service import ComplianceCalendarService
 from app.services.tds_service import TdsService
 

@@ -1,6 +1,11 @@
 from uuid import uuid4
 
-from app.integrations.protocols import EInvoiceProvider, EWayBillRequest, EWayBillResponse, GspProvider
+from app.integrations.protocols import (
+    EInvoiceProvider,
+    EWayBillRequest,
+    EWayBillResponse,
+    GspProvider,
+)
 
 
 class MockGspProvider(GspProvider):

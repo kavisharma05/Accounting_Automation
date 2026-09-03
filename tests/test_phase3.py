@@ -7,7 +7,6 @@ import pytest
 
 from app.core.exceptions import ValidationError
 from app.core.logging import OrganizationContext
-from app.domain.accounting.engine import AccountingEngine
 from app.domain.organizations.coa_seed import seed_chart_of_accounts
 from app.domain.organizations.pilot_config import configure_pilot_accounts
 from app.domain.tax.engine import TaxEngine
