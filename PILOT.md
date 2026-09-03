@@ -2,6 +2,8 @@
 
 **Stage:** 16 — Active
 
+> **Status:** Full platform merged to `main`. Use [STAGING.md](STAGING.md) for production-like Docker deploy, or the quick start below for local dev.
+
 ## Quick start (local)
 
 ```bash
