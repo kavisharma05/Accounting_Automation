@@ -36,7 +36,8 @@ class InvoiceService:
         payable_account_id: UUID,
         input_tax_account_id: UUID | None = None,
     ) -> Invoice:
-        party = self._get_or_create_party(ctx, extraction)
+        inv_type = InvoiceType(extraction.invoice_type)
+        party = self._get_or_create_party(ctx, extraction, inv_type)
         inv_number = extraction.invoice_number or "UNKNOWN"
         inv_date = extraction.invoice_date or date.today()
         self._check_duplicate_invoice(ctx, party.id, inv_number, inv_date)
@@ -44,7 +45,7 @@ class InvoiceService:
         inv = Invoice(
             organization_id=ctx.organization_id,
             party_id=party.id,
-            invoice_type=InvoiceType(extraction.invoice_type),
+            invoice_type=inv_type,
             invoice_number=inv_number,
             invoice_date=inv_date,
             subtotal=extraction.subtotal,
@@ -94,9 +95,12 @@ class InvoiceService:
         ctx: OrganizationContext,
         invoice_id: UUID,
         *,
-        expense_account_id: UUID,
-        payable_account_id: UUID,
+        expense_account_id: UUID | None = None,
+        payable_account_id: UUID | None = None,
         input_tax_account_id: UUID | None = None,
+        receivable_account_id: UUID | None = None,
+        revenue_account_id: UUID | None = None,
+        output_tax_account_id: UUID | None = None,
         idempotency_key: str | None = None,
     ) -> Invoice:
         inv = self._get_invoice(ctx, invoice_id)
@@ -105,36 +109,19 @@ class InvoiceService:
         if inv.status != InvoiceStatus.pending_approval:
             raise ValidationError("Invoice is not pending approval")
 
-        tax_account = input_tax_account_id
-        lines = [
-            {
-                "chart_of_account_id": expense_account_id,
-                "debit": inv.subtotal,
-                "credit": 0,
-                "description": f"Expense {inv.invoice_number}",
-            },
-            {
-                "chart_of_account_id": payable_account_id,
-                "debit": 0,
-                "credit": inv.total,
-                "description": f"Payable {inv.invoice_number}",
-            },
-        ]
-        if tax_account and inv.tax_total:
-            lines.insert(
-                1,
-                {
-                    "chart_of_account_id": tax_account,
-                    "debit": inv.tax_total,
-                    "credit": 0,
-                    "description": "Input GST",
-                },
+        if inv.invoice_type == InvoiceType.sales:
+            lines, description = self._sales_journal_lines(
+                inv, receivable_account_id, revenue_account_id, output_tax_account_id
+            )
+        else:
+            lines, description = self._purchase_journal_lines(
+                inv, expense_account_id, payable_account_id, input_tax_account_id
             )
 
         entry = self.accounting.create_draft_entry(
             ctx,
             entry_date=inv.invoice_date,
-            description=f"Purchase invoice {inv.invoice_number}",
+            description=description,
             lines=lines,
             source_type="invoice",
             source_id=inv.id,
@@ -169,23 +156,104 @@ class InvoiceService:
         self.db.flush()
         return inv
 
-    def _get_or_create_party(self, ctx: OrganizationContext, extraction: DocumentExtraction) -> Party:
-        if extraction.vendor_gstin:
+    def _purchase_journal_lines(
+        self,
+        inv: Invoice,
+        expense_account_id: UUID | None,
+        payable_account_id: UUID | None,
+        input_tax_account_id: UUID | None,
+    ) -> tuple[list[dict], str]:
+        if not expense_account_id or not payable_account_id:
+            raise ValidationError("Purchase accounts (expense, payable) required")
+        lines = [
+            {
+                "chart_of_account_id": expense_account_id,
+                "debit": inv.subtotal,
+                "credit": 0,
+                "description": f"Expense {inv.invoice_number}",
+            },
+            {
+                "chart_of_account_id": payable_account_id,
+                "debit": 0,
+                "credit": inv.total,
+                "description": f"Payable {inv.invoice_number}",
+            },
+        ]
+        if input_tax_account_id and inv.tax_total:
+            lines.insert(
+                1,
+                {
+                    "chart_of_account_id": input_tax_account_id,
+                    "debit": inv.tax_total,
+                    "credit": 0,
+                    "description": "Input GST",
+                },
+            )
+        return lines, f"Purchase invoice {inv.invoice_number}"
+
+    def _sales_journal_lines(
+        self,
+        inv: Invoice,
+        receivable_account_id: UUID | None,
+        revenue_account_id: UUID | None,
+        output_tax_account_id: UUID | None,
+    ) -> tuple[list[dict], str]:
+        if not receivable_account_id or not revenue_account_id:
+            raise ValidationError("Sales accounts (receivable, revenue) required")
+        lines = [
+            {
+                "chart_of_account_id": receivable_account_id,
+                "debit": inv.total,
+                "credit": 0,
+                "description": f"AR {inv.invoice_number}",
+            },
+            {
+                "chart_of_account_id": revenue_account_id,
+                "debit": 0,
+                "credit": inv.subtotal,
+                "description": f"Revenue {inv.invoice_number}",
+            },
+        ]
+        if output_tax_account_id and inv.tax_total:
+            lines.append(
+                {
+                    "chart_of_account_id": output_tax_account_id,
+                    "debit": 0,
+                    "credit": inv.tax_total,
+                    "description": "Output GST",
+                }
+            )
+        return lines, f"Sales invoice {inv.invoice_number}"
+
+    def _get_or_create_party(
+        self,
+        ctx: OrganizationContext,
+        extraction: DocumentExtraction,
+        inv_type: InvoiceType,
+    ) -> Party:
+        gstin = extraction.vendor_gstin
+        if gstin:
             existing = (
                 self.db.query(Party)
                 .filter(
                     Party.organization_id == ctx.organization_id,
-                    Party.gstin == extraction.vendor_gstin,
+                    Party.gstin == gstin,
                 )
                 .first()
             )
             if existing:
                 return existing
+        if inv_type == InvoiceType.sales:
+            party_type = PartyType.customer
+            name = extraction.vendor_name or "Unknown Customer"
+        else:
+            party_type = PartyType.vendor
+            name = extraction.vendor_name or "Unknown Vendor"
         party = Party(
             organization_id=ctx.organization_id,
-            party_type=PartyType.vendor,
-            name=extraction.vendor_name or "Unknown Vendor",
-            gstin=extraction.vendor_gstin,
+            party_type=party_type,
+            name=name,
+            gstin=gstin,
         )
         self.db.add(party)
         self.db.flush()

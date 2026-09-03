@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.routes.core import router as core_router
 from app.api.v1.routes.phase2 import router as phase2_router
+from app.api.v1.routes.phase3 import router as phase3_router
 from app.api.v1.routes.pilot import router as pilot_router
 from app.api.webhooks.whatsapp import router as whatsapp_router
 from app.core.config import settings
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
     app.include_router(core_router, prefix="/api/v1")
     app.include_router(pilot_router, prefix="/api/v1")
     app.include_router(phase2_router, prefix="/api/v1")
+    app.include_router(phase3_router, prefix="/api/v1")
     app.include_router(whatsapp_router, prefix="/webhooks")
 
     return app

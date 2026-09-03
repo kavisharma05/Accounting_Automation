@@ -68,6 +68,9 @@ class PilotConfigResponse(BaseModel):
     default_expense_account_id: UUID | None
     default_payable_account_id: UUID | None
     default_input_tax_account_id: UUID | None
+    default_receivable_account_id: UUID | None
+    default_revenue_account_id: UUID | None
+    default_output_tax_account_id: UUID | None
 
     model_config = {"from_attributes": True}
 
@@ -76,6 +79,9 @@ class PilotConfigUpdate(BaseModel):
     expense_account_id: UUID | None = None
     payable_account_id: UUID | None = None
     input_tax_account_id: UUID | None = None
+    receivable_account_id: UUID | None = None
+    revenue_account_id: UUID | None = None
+    output_tax_account_id: UUID | None = None
     auto_from_coa: bool = False
 
 

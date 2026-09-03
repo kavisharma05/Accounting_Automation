@@ -28,6 +28,9 @@ def update_pilot_config(
             expense_account_id=body.expense_account_id,
             payable_account_id=body.payable_account_id,
             input_tax_account_id=body.input_tax_account_id,
+            receivable_account_id=body.receivable_account_id,
+            revenue_account_id=body.revenue_account_id,
+            output_tax_account_id=body.output_tax_account_id,
             auto_from_coa=body.auto_from_coa,
         )
         db.commit()
@@ -36,6 +39,9 @@ def update_pilot_config(
             default_expense_account_id=org.default_expense_account_id,
             default_payable_account_id=org.default_payable_account_id,
             default_input_tax_account_id=org.default_input_tax_account_id,
+            default_receivable_account_id=org.default_receivable_account_id,
+            default_revenue_account_id=org.default_revenue_account_id,
+            default_output_tax_account_id=org.default_output_tax_account_id,
         )
     except DomainError as e:
         db.rollback()
@@ -54,6 +60,9 @@ def get_pilot_config(org_id: UUID, db: Session = Depends(get_db)):
         default_expense_account_id=org.default_expense_account_id,
         default_payable_account_id=org.default_payable_account_id,
         default_input_tax_account_id=org.default_input_tax_account_id,
+        default_receivable_account_id=org.default_receivable_account_id,
+        default_revenue_account_id=org.default_revenue_account_id,
+        default_output_tax_account_id=org.default_output_tax_account_id,
     )
 
 

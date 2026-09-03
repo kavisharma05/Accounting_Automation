@@ -33,6 +33,22 @@ python scripts/pilot_smoke_test.py --base-url http://localhost:8000
 
 See [PILOT.md](PILOT.md) for full onboarding checklist.
 
+## Phase 3 API (sales, notes, GSTR, e-invoice)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST .../sales-invoices` | Create sales invoice |
+| `POST .../sales-invoices/{id}/post` | Post sales invoice |
+| `POST .../credit-notes` | Create credit note against invoice |
+| `POST .../credit-notes/{id}/post` | Post credit note |
+| `POST .../debit-notes` | Create debit note against invoice |
+| `POST .../debit-notes/{id}/post` | Post debit note |
+| `GET .../gstr/gstr1` | GSTR-1 B2B worksheet data |
+| `GET .../gstr/gstr3b` | GSTR-3B summary |
+| `GET .../reports/gstr1.xlsx` | GSTR-1 + 3B Excel export |
+| `POST .../invoices/{id}/einvoice` | Generate e-invoice IRN (mock GSP) |
+| `GET .../search/invoices?q=` | Search invoices by number/party/GSTIN |
+
 ## Phase 2 API (dashboard, payments, bank)
 
 | Endpoint | Purpose |

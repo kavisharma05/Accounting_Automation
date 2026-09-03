@@ -6,6 +6,7 @@ from app.integrations.messaging.mock import MockMessagingProvider
 from app.integrations.messaging.whatsapp import WhatsAppCloudAdapter
 from app.integrations.protocols import (
     DocumentUnderstandingProvider,
+    EInvoiceProvider,
     GspProvider,
     MessagingProvider,
     StorageProvider,
@@ -31,6 +32,12 @@ def get_storage_provider() -> StorageProvider:
 
 def get_gsp_provider() -> GspProvider:
     return MockGspProvider()
+
+
+def get_einvoice_provider() -> EInvoiceProvider:
+    from app.integrations.gsp.mock import MockEInvoiceProvider
+
+    return MockEInvoiceProvider()
 
 
 def get_email_provider():

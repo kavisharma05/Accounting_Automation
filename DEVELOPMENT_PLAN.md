@@ -14,6 +14,7 @@ Vertical slices in dependency order. Each milestone has a deliverable and gate.
 | M6 Payments | Payment, PaymentApplication | Partial payment tests | Done |
 | M6b Bank | Import CSV, auto-reconcile | Match tests | Done |
 | M10 Dashboard API | Summary, invoices, payments lists | JWT + role auth | Done |
+| M13 Phase 3 | Sales invoices, credit/debit notes, GSTR prep, e-invoice | Phase 3 tests pass | Done |
 | M7 WhatsApp | Webhook, media, confirmation flow | Mock E2E test | In progress |
 | M8 Tax | TaxRuleVersion, basic GST split | Rule version recorded | In progress |
 | M9 Reporting | Ledger Excel/PDF export | Output validates | In progress |
@@ -45,4 +46,5 @@ Vertical slices in dependency order. Each milestone has a deliverable and gate.
 
 **Phase 1 pilot:** M1–M5, M7 (mock), M8 (basic), M11  
 **Phase 2:** M6, M9, M10, live adapters, Celery scale-up  
-**Phase 3:** E-invoice, advanced tax returns
+**Phase 3:** E-invoice, GSTR-1/3B prep, sales invoices, credit/debit notes, search — **Done (API)**  
+**Phase 4:** TDS computation; compliance calendar automation

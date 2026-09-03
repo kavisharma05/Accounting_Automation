@@ -97,6 +97,15 @@ class Organization(Base, TimestampMixin, SoftDeleteMixin):
     default_input_tax_account_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("chart_of_accounts.id"), nullable=True
     )
+    default_receivable_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("chart_of_accounts.id"), nullable=True
+    )
+    default_revenue_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("chart_of_accounts.id"), nullable=True
+    )
+    default_output_tax_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("chart_of_accounts.id"), nullable=True
+    )
     locked_through_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     ca_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
@@ -341,6 +350,76 @@ class EWayBill(Base, TimestampMixin):
     organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
     invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoices.id"))
     external_id: Mapped[str | None] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(32), default="pending")
+    response_data: Mapped[dict | None] = mapped_column(JSON)
+
+
+class NoteStatus(str, enum.Enum):
+    draft = "draft"
+    pending_approval = "pending_approval"
+    posted = "posted"
+    cancelled = "cancelled"
+
+
+class CreditNote(Base, TimestampMixin, SoftDeleteMixin):
+    __tablename__ = "credit_notes"
+    __table_args__ = (
+        Index("ix_credit_note_org_number", "organization_id", "note_number"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    party_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("parties.id"))
+    original_invoice_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("invoices.id"))
+    note_number: Mapped[str] = mapped_column(String(64), nullable=False)
+    note_date: Mapped[date] = mapped_column(Date, nullable=False)
+    subtotal: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    tax_total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    reason: Mapped[str | None] = mapped_column(String(512))
+    status: Mapped[NoteStatus] = mapped_column(Enum(NoteStatus), default=NoteStatus.pending_approval)
+    journal_entry_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("journal_entries.id"))
+
+
+class DebitNote(Base, TimestampMixin, SoftDeleteMixin):
+    __tablename__ = "debit_notes"
+    __table_args__ = (
+        Index("ix_debit_note_org_number", "organization_id", "note_number"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    party_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("parties.id"))
+    original_invoice_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("invoices.id"))
+    note_number: Mapped[str] = mapped_column(String(64), nullable=False)
+    note_date: Mapped[date] = mapped_column(Date, nullable=False)
+    subtotal: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    tax_total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    total: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    reason: Mapped[str | None] = mapped_column(String(512))
+    status: Mapped[NoteStatus] = mapped_column(Enum(NoteStatus), default=NoteStatus.pending_approval)
+    journal_entry_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("journal_entries.id"))
+
+
+class NoteApplication(Base):
+    __tablename__ = "note_applications"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    note_type: Mapped[str] = mapped_column(String(16), nullable=False)  # credit | debit
+    note_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), index=True)
+    invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoices.id"), index=True)
+    amount_applied: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
+
+
+class EInvoice(Base, TimestampMixin):
+    __tablename__ = "einvoices"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoices.id"), index=True)
+    irn: Mapped[str | None] = mapped_column(String(128))
+    ack_no: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(32), default="pending")
     response_data: Mapped[dict | None] = mapped_column(JSON)
 

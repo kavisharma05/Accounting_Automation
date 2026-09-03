@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from app.integrations.protocols import EWayBillRequest, EWayBillResponse, GspProvider
+from app.integrations.protocols import EInvoiceProvider, EWayBillRequest, EWayBillResponse, GspProvider
 
 
 class MockGspProvider(GspProvider):
@@ -10,3 +10,15 @@ class MockGspProvider(GspProvider):
             status="generated",
             raw={"sandbox": True, "invoice_id": str(request.invoice_id)},
         )
+
+
+class MockEInvoiceProvider(EInvoiceProvider):
+    async def generate_einvoice(self, invoice_id, payload: dict) -> dict:
+        return {
+            "irn": f"IRN-{uuid4().hex[:16].upper()}",
+            "ack_no": f"ACK{uuid4().hex[:8].upper()}",
+            "status": "generated",
+            "sandbox": True,
+            "invoice_id": str(invoice_id),
+            "payload": payload,
+        }
