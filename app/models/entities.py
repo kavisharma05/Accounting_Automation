@@ -97,6 +97,8 @@ class Organization(Base, TimestampMixin, SoftDeleteMixin):
     default_input_tax_account_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("chart_of_accounts.id"), nullable=True
     )
+    locked_through_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ca_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
 class User(Base, TimestampMixin):
@@ -292,13 +294,18 @@ class TaxRuleVersion(Base):
 
 class Payment(Base, TimestampMixin):
     __tablename__ = "payments"
+    __table_args__ = (
+        Index("ix_payment_org_ref", "organization_id", "reference"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
     party_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("parties.id"))
     amount: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
     payment_date: Mapped[date] = mapped_column(Date, nullable=False)
+    reference: Mapped[str | None] = mapped_column(String(128))
     journal_entry_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("journal_entries.id"))
+    idempotency_key: Mapped[str | None] = mapped_column(String(128))
 
 
 class PaymentApplication(Base):
@@ -336,3 +343,43 @@ class EWayBill(Base, TimestampMixin):
     external_id: Mapped[str | None] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(32), default="pending")
     response_data: Mapped[dict | None] = mapped_column(JSON)
+
+
+class BankAccount(Base, TimestampMixin):
+    __tablename__ = "bank_accounts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    chart_of_account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chart_of_accounts.id"))
+    name: Mapped[str] = mapped_column(String(255))
+    account_number: Mapped[str | None] = mapped_column(String(64))
+    ifsc: Mapped[str | None] = mapped_column(String(16))
+
+
+class BankStatementTransaction(Base, TimestampMixin):
+    __tablename__ = "bank_statement_transactions"
+    __table_args__ = (
+        Index("ix_bank_txn_org_date", "organization_id", "transaction_date"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    bank_account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("bank_accounts.id"), index=True)
+    transaction_date: Mapped[date] = mapped_column(Date, nullable=False)
+    description: Mapped[str] = mapped_column(String(512), default="")
+    amount: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
+    external_ref: Mapped[str | None] = mapped_column(String(128))
+    is_reconciled: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ReconciliationMatch(Base, TimestampMixin):
+    __tablename__ = "reconciliation_matches"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    bank_statement_transaction_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("bank_statement_transactions.id"), index=True
+    )
+    matched_entity_type: Mapped[str] = mapped_column(String(64))
+    matched_entity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    match_confidence: Mapped[float | None] = mapped_column(Numeric(5, 4))

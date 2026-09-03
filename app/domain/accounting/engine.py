@@ -13,6 +13,7 @@ from app.models.entities import (
     JournalEntry,
     JournalEntryLine,
     JournalEntryStatus,
+    Organization,
 )
 from app.repositories.journal import JournalRepository
 
@@ -89,6 +90,12 @@ class AccountingEngine:
 
         if entry.status == JournalEntryStatus.reversed:
             raise PostingError("Cannot post a reversed entry")
+
+        org = self.db.get(Organization, ctx.organization_id)
+        if org and org.locked_through_date and entry.entry_date <= org.locked_through_date:
+            raise PostingError(
+                f"Period locked through {org.locked_through_date.isoformat()}"
+            )
 
         lines = list(entry.lines)
         validate_balanced_lines(lines)

@@ -3,6 +3,8 @@ from app.models.entities import (
     ApprovalRequest,
     AuditLogEntry,
     BackgroundJob,
+    BankAccount,
+    BankStatementTransaction,
     ChartOfAccount,
     Document,
     EWayBill,
@@ -16,6 +18,7 @@ from app.models.entities import (
     Payment,
     PaymentApplication,
     PhoneOrgMapping,
+    ReconciliationMatch,
     TaxRuleVersion,
     User,
 )
@@ -25,6 +28,8 @@ __all__ = [
     "ApprovalRequest",
     "AuditLogEntry",
     "BackgroundJob",
+    "BankAccount",
+    "BankStatementTransaction",
     "ChartOfAccount",
     "Document",
     "EWayBill",
@@ -38,6 +43,7 @@ __all__ = [
     "Payment",
     "PaymentApplication",
     "PhoneOrgMapping",
+    "ReconciliationMatch",
     "TaxRuleVersion",
     "User",
 ]

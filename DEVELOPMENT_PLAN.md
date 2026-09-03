@@ -11,7 +11,9 @@ Vertical slices in dependency order. Each milestone has a deliverable and gate.
 | M3 Accounting Core | COA, JournalEntry, double-entry post | Debit=credit enforced | In progress |
 | M4 Documents | Upload, storage, metadata, extraction record | Storage + provenance tests | In progress |
 | M5 Invoices | Purchase invoice → proposal → post | End-to-end manual post | In progress |
-| M6 Payments | Payment, PaymentApplication | Partial payment tests | Planned |
+| M6 Payments | Payment, PaymentApplication | Partial payment tests | Done |
+| M6b Bank | Import CSV, auto-reconcile | Match tests | Done |
+| M10 Dashboard API | Summary, invoices, payments lists | JWT + role auth | Done |
 | M7 WhatsApp | Webhook, media, confirmation flow | Mock E2E test | In progress |
 | M8 Tax | TaxRuleVersion, basic GST split | Rule version recorded | In progress |
 | M9 Reporting | Ledger Excel/PDF export | Output validates | In progress |

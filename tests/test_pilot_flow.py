@@ -2,15 +2,14 @@
 
 from io import BytesIO
 
-import app.models.entities  # noqa: F401
-from app.core.database import Base, get_db
-from app.domain.organizations.coa_seed import seed_chart_of_accounts
-from app.domain.organizations.pilot_config import configure_pilot_accounts
-from app.main import app as fastapi_app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
+import app.models.entities  # noqa: F401
+from app.core.database import Base, get_db
+from app.main import app as fastapi_app
 
 
 def test_pilot_flow_end_to_end():

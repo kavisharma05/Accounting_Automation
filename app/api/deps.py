@@ -26,6 +26,9 @@ def get_current_ctx(
             raise HTTPException(401, "Invalid token") from exc
 
     if x_organization_id:
-        return OrganizationContext(organization_id=UUID(x_organization_id))
+        return OrganizationContext(
+            organization_id=UUID(x_organization_id),
+            role="owner",  # dev/pilot header; use JWT in production
+        )
 
     raise HTTPException(401, "Authentication required")

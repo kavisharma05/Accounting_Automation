@@ -1,4 +1,4 @@
-from app.models.entities import Organization, PhoneOrgMapping
+from app.models.entities import PhoneOrgMapping
 from app.services.messaging_service import MessagingService
 
 

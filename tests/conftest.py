@@ -2,9 +2,9 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import app.models.entities  # noqa: F401
 from app.core.database import Base
 from app.models.entities import Organization
-import app.models.entities  # noqa: F401
 
 
 @pytest.fixture

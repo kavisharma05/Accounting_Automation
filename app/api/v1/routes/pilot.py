@@ -7,7 +7,7 @@ from app.api.deps import get_db
 from app.core.exceptions import DomainError, ValidationError
 from app.core.logging import OrganizationContext
 from app.domain.organizations.pilot_config import configure_pilot_accounts, get_org_account_defaults
-from app.models.entities import ApprovalRequest, Invoice, InvoiceStatus
+from app.models.entities import ApprovalRequest, Invoice
 from app.schemas.common import PilotConfigResponse, PilotConfigUpdate
 from app.services.document_service import DocumentService
 from app.services.invoice_service import InvoiceService

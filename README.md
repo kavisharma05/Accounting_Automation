@@ -28,11 +28,22 @@ pytest tests/ -v
 
 ```bash
 docker compose up --build -d
-docker compose --profile tools run --rm seed   # optional
 python scripts/pilot_smoke_test.py --base-url http://localhost:8000
 ```
 
 See [PILOT.md](PILOT.md) for full onboarding checklist.
+
+## Phase 2 API (dashboard, payments, bank)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET .../dashboard` | Summary metrics |
+| `GET .../invoices` | Invoice list with outstanding |
+| `POST .../payments` | Post payment with partial applications |
+| `POST .../bank-accounts/{id}/import` | CSV bank statement import |
+| `POST .../bank-accounts/{id}/reconcile` | Auto-match to payments |
+| `PATCH .../period-lock` | Lock posting through date |
+| `POST .../reports/email-ledger` | Email Excel to CA |
 
 ## Key principles
 

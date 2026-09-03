@@ -31,3 +31,9 @@ def get_storage_provider() -> StorageProvider:
 
 def get_gsp_provider() -> GspProvider:
     return MockGspProvider()
+
+
+def get_email_provider():
+    from app.integrations.email.mock import MockEmailProvider
+
+    return MockEmailProvider()
