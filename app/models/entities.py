@@ -88,6 +88,15 @@ class Organization(Base, TimestampMixin, SoftDeleteMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     gstin: Mapped[str | None] = mapped_column(String(15))
     financial_year_start_month: Mapped[int] = mapped_column(default=4)
+    default_expense_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("chart_of_accounts.id"), nullable=True
+    )
+    default_payable_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("chart_of_accounts.id"), nullable=True
+    )
+    default_input_tax_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("chart_of_accounts.id"), nullable=True
+    )
 
 
 class User(Base, TimestampMixin):

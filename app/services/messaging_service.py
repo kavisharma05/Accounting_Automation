@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.logging import OrganizationContext
+from app.domain.organizations.pilot_config import get_org_account_defaults
 from app.integrations.factory import get_messaging_provider
 from app.integrations.protocols import OutboundMessage
 from app.models.entities import PhoneOrgMapping
@@ -41,19 +42,29 @@ class MessagingService:
         input_tax_account_id: UUID | None = None,
     ) -> str:
         if text and text.strip().upper() in ("YES", "CONFIRM", "OK"):
+            try:
+                expense_id, payable_id, tax_id = get_org_account_defaults(self.db, ctx.organization_id)
+            except Exception:
+                expense_id = payable_id = tax_id = None
             return await self._handle_confirmation(
-                ctx, from_phone, expense_account_id, payable_account_id, input_tax_account_id
+                ctx, from_phone, expense_id, payable_id, tax_id
             )
 
         if media_content and mime_type:
+            try:
+                expense_id, payable_id, tax_id = get_org_account_defaults(
+                    self.db, ctx.organization_id
+                )
+            except Exception:
+                expense_id = payable_id = tax_id = None
             doc = await self.documents.upload(ctx, media_content, mime_type)
             job_id = enqueue_extract_and_propose(
                 str(ctx.organization_id),
                 str(doc.id),
                 from_phone,
-                str(expense_account_id) if expense_account_id else None,
-                str(payable_account_id) if payable_account_id else None,
-                str(input_tax_account_id) if input_tax_account_id else None,
+                str(expense_account_id or expense_id) if (expense_account_id or expense_id) else None,
+                str(payable_account_id or payable_id) if (payable_account_id or payable_id) else None,
+                str(input_tax_account_id or tax_id) if (input_tax_account_id or tax_id) else None,
             )
             await self.messaging.send_message(
                 OutboundMessage(

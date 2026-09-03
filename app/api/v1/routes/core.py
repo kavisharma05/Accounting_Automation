@@ -10,6 +10,7 @@ from app.core.logging import OrganizationContext
 from app.core.security import create_access_token, verify_password
 from app.domain.accounting.engine import AccountingEngine
 from app.domain.organizations.coa_seed import seed_chart_of_accounts
+from app.domain.organizations.pilot_config import configure_pilot_accounts
 from app.models.entities import ChartOfAccount, Organization, OrganizationMembership, User
 from app.schemas.common import (
     ChartOfAccountCreate,
@@ -38,6 +39,7 @@ def create_organization(body: OrganizationCreate, db: Session = Depends(get_db))
     db.add(org)
     db.flush()
     seed_chart_of_accounts(db, org.id)
+    configure_pilot_accounts(db, org.id, auto_from_coa=True)
     db.commit()
     db.refresh(org)
     return org

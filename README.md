@@ -24,13 +24,15 @@ uvicorn app.main:app --reload
 pytest tests/ -v
 ```
 
-## Docker
+## Pilot (next step)
 
 ```bash
-docker compose up --build
+docker compose up --build -d
+docker compose --profile tools run --rm seed   # optional
+python scripts/pilot_smoke_test.py --base-url http://localhost:8000
 ```
 
-API: http://localhost:8000/docs
+See [PILOT.md](PILOT.md) for full onboarding checklist.
 
 ## Key principles
 

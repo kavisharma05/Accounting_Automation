@@ -63,6 +63,22 @@ class PhoneMappingCreate(BaseModel):
     phone_e164: str
 
 
+class PilotConfigResponse(BaseModel):
+    organization_id: UUID
+    default_expense_account_id: UUID | None
+    default_payable_account_id: UUID | None
+    default_input_tax_account_id: UUID | None
+
+    model_config = {"from_attributes": True}
+
+
+class PilotConfigUpdate(BaseModel):
+    expense_account_id: UUID | None = None
+    payable_account_id: UUID | None = None
+    input_tax_account_id: UUID | None = None
+    auto_from_coa: bool = False
+
+
 class LoginRequest(BaseModel):
     email: str
     password: str

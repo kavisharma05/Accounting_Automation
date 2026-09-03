@@ -63,5 +63,16 @@ services:
         condition: service_healthy
     command: python -m app.workers.runner
 
+  seed:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg2://accounting:accounting@db:5432/accounting
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python scripts/seed_pilot_org.py
+    profiles:
+      - tools
+
 volumes:
   document_data:

@@ -1,12 +1,12 @@
 import json
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.core.config import settings
+from app.core.exceptions import ValidationError
 from app.core.security import verify_whatsapp_signature
+from app.domain.organizations.pilot_config import get_org_account_defaults
 from app.integrations.protocols import OutboundMessage
 from app.services.messaging_service import MessagingService
 
@@ -28,9 +28,6 @@ def whatsapp_verify(
 async def whatsapp_webhook(
     request: Request,
     db: Session = Depends(get_db),
-    expense_account_id: UUID | None = None,
-    payable_account_id: UUID | None = None,
-    input_tax_account_id: UUID | None = None,
 ):
     body = await request.body()
     if not verify_whatsapp_signature(body, request.headers.get("X-Hub-Signature-256")):
@@ -52,6 +49,12 @@ async def whatsapp_webhook(
             )
             continue
 
+        expense_id = payable_id = tax_id = None
+        try:
+            expense_id, payable_id, tax_id = get_org_account_defaults(db, ctx.organization_id)
+        except ValidationError:
+            pass
+
         media_content = None
         mime_type = None
         if msg.media_id:
@@ -63,9 +66,9 @@ async def whatsapp_webhook(
             mime_type=mime_type,
             text=msg.text,
             from_phone=msg.from_phone,
-            expense_account_id=expense_account_id,
-            payable_account_id=payable_account_id,
-            input_tax_account_id=input_tax_account_id,
+            expense_account_id=expense_id,
+            payable_account_id=payable_id,
+            input_tax_account_id=tax_id,
         )
 
     db.commit()
