@@ -93,3 +93,11 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class MeResponse(BaseModel):
+    user_id: UUID
+    email: str
+    organization_id: UUID
+    organization_name: str
+    role: str

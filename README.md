@@ -24,6 +24,34 @@ uvicorn app.main:app --reload
 pytest tests/ -v
 ```
 
+## Dashboard UI
+
+React + TypeScript SPA in `frontend/`.
+
+**Development** (API on :8000, Vite dev server on :5173 with proxy):
+
+```bash
+# Terminal 1 — API
+uvicorn app.main:app --reload
+
+# Terminal 2 — seed pilot org + user (once)
+python scripts/seed_pilot_org.py
+
+# Terminal 3 — dashboard
+cd frontend && npm install && npm run dev
+```
+
+Open http://localhost:5173 — login with `admin@pilot.local` / `pilot-admin-change-me` (from seed script).
+
+**Production / Docker** — frontend is built into the API image and served at http://localhost:8000/:
+
+```bash
+docker compose up --build -d
+docker compose --profile tools run --rm seed
+```
+
+Or use the `frontend` compose service for hot-reload during development.
+
 ## Pilot (next step)
 
 ```bash

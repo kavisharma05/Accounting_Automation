@@ -18,6 +18,7 @@ from app.schemas.common import (
     JournalEntryCreate,
     JournalEntryResponse,
     LoginRequest,
+    MeResponse,
     OrganizationCreate,
     OrganizationResponse,
     PhoneMappingCreate,
@@ -125,6 +126,28 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(403, "No organization membership")
     token = create_access_token(str(user.id), membership.organization_id, membership.role.value)
     return TokenResponse(access_token=token)
+
+
+@router.get("/me", response_model=MeResponse)
+def get_me(
+    db: Session = Depends(get_db),
+    ctx: OrganizationContext = Depends(get_current_ctx),
+):
+    if not ctx.user_id:
+        raise HTTPException(401, "User context required")
+    user = db.get(User, ctx.user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    org = db.get(Organization, ctx.organization_id)
+    if not org:
+        raise HTTPException(404, "Organization not found")
+    return MeResponse(
+        user_id=ctx.user_id,
+        email=user.email,
+        organization_id=ctx.organization_id,
+        organization_name=org.name,
+        role=ctx.role or "viewer",
+    )
 
 
 @router.get("/organizations/{org_id}/reports/ledger.xlsx")
