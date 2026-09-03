@@ -1,5 +1,7 @@
 # Product Requirements Document (PRD)
 
+> **Ratified baseline:** This file is the original technology fragment. Complete requirements are in [PRD_SUPPLEMENT.md](PRD_SUPPLEMENT.md) with decisions in [PRD_DECISIONS.md](PRD_DECISIONS.md). **Status: FROZEN** (2026-09-03).
+
 ### Background Processing
 
 **Jobs requiring async execution:** AI/OCR document processing, report generation, email dispatch, bank statement processing, reconciliation runs, notification dispatch, e-way bill generation requests, e-invoice generation requests.

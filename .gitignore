@@ -7,7 +7,8 @@ __pycache__/
 
 # Environment and secrets
 .env
-.env.*
+.env.local
+.env.*.local
 *.pem
 *.key
 credentials.json
@@ -22,4 +23,6 @@ Thumbs.db
 # Build output
 dist/
 build/
+*.egg-info/
 *.log
+data/
