@@ -22,4 +22,5 @@ Thumbs.db
 # Build output
 dist/
 build/
+*.egg-info/
 *.log

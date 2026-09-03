@@ -483,7 +483,7 @@ Answer these before freezing the PRD. Each question links to finding IDs it reso
 | Q-32 | Document and financial record retention periods? | TAX-12 |
 | Q-33 | Pilot scale targets (orgs, invoices/day, users)? | AMB-11, ASM-09 |
 | Q-34 | Should `EInvoice` entity exist in Phase 1 schema before provider integration? | CON-04 |
-| Q-35 | Can one document map to multiple transactions, or is it strictly 1:N document→transaction? | AMB-11 |
+| Q-35 | Can one document map to multiple transactions, or is it strictly 1:N document→transaction? | AMB-12 |
 | Q-36 | Journal entry idempotency: separate from job idempotency keys? | ACC-14 |
 
 ### Low priority — can defer to tech design if flagged

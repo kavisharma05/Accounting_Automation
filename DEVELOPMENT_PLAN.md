@@ -1,0 +1,46 @@
+# Development Plan
+
+**Stage:** 6 of 18
+
+Vertical slices in dependency order. Each milestone has a deliverable and gate.
+
+| Milestone | Deliverable | Gate | Status |
+|-----------|-------------|------|--------|
+| M1 Foundation | FastAPI, Postgres, Docker, CI, migrations | App starts, DB connects, tests run | In progress |
+| M2 Org & Users | Organization, User, Membership, phone mapping | Tenant isolation tests pass | In progress |
+| M3 Accounting Core | COA, JournalEntry, double-entry post | Debit=credit enforced | In progress |
+| M4 Documents | Upload, storage, metadata, extraction record | Storage + provenance tests | In progress |
+| M5 Invoices | Purchase invoice → proposal → post | End-to-end manual post | In progress |
+| M6 Payments | Payment, PaymentApplication | Partial payment tests | Planned |
+| M7 WhatsApp | Webhook, media, confirmation flow | Mock E2E test | In progress |
+| M8 Tax | TaxRuleVersion, basic GST split | Rule version recorded | In progress |
+| M9 Reporting | Ledger Excel/PDF export | Output validates | In progress |
+| M10 Dashboard API | JWT auth, read endpoints | API integration tests | In progress |
+| M11 Hardening | Audit, idempotency, DLQ | Security checklist | In progress |
+| M12 Pilot | PILOT.md runbook | Real workflow checklist | Documented |
+| M13 Production | DEPLOYMENT.md, CI deploy | Health checks pass | Documented |
+
+## Build order (critical path)
+
+1. Accounting engine (M3) — before AI/WhatsApp
+2. Document pipeline with mock AI (M4)
+3. Invoice posting (M5)
+4. Jobs + idempotency (M1/M11)
+5. WhatsApp adapter (M7)
+6. Tax layer (M8)
+7. Reporting (M9)
+8. Dashboard reads (M10)
+
+## Out of scope for initial implementation
+
+- Live Claude API in CI (mock adapter only)
+- Live WhatsApp in CI (mock adapter)
+- GSP production credentials (sandbox stub)
+- E-invoice NIC integration (interface only)
+- Full GSTR return filing
+
+## Phase mapping **(IMP-DEFAULT Q-02)**
+
+**Phase 1 pilot:** M1–M5, M7 (mock), M8 (basic), M11  
+**Phase 2:** M6, M9, M10, live adapters, Celery scale-up  
+**Phase 3:** E-invoice, advanced tax returns
