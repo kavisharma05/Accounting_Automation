@@ -9,6 +9,7 @@ from app.models.entities import (
     InvoiceStatus,
     JournalEntry,
     JournalEntryStatus,
+    Party,
     Payment,
 )
 from app.services.payment_service import PaymentService
@@ -82,10 +83,14 @@ class DashboardService:
                 if inv.status == InvoiceStatus.posted
                 else Decimal(str(inv.total))
             )
+            party_row = self.db.get(Party, inv.party_id)
             result.append({
                 "id": str(inv.id),
                 "invoice_number": inv.invoice_number,
                 "invoice_date": inv.invoice_date.isoformat(),
+                "invoice_type": inv.invoice_type.value,
+                "party_id": str(inv.party_id),
+                "party_name": party_row.name if party_row else "",
                 "total": str(inv.total),
                 "status": inv.status.value,
                 "outstanding": str(outstanding),

@@ -1,8 +1,11 @@
+from decimal import Decimal
+
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.logging import OrganizationContext
-from app.models.entities import Invoice, Party
+from app.models.entities import Invoice, InvoiceStatus, Party
+from app.services.payment_service import PaymentService
 
 
 class SearchService:
@@ -10,6 +13,7 @@ class SearchService:
 
     def __init__(self, db: Session):
         self.db = db
+        self.payments = PaymentService(db)
 
     def search_invoices(
         self,
@@ -37,16 +41,23 @@ class SearchService:
             query = query.filter(Invoice.invoice_type == invoice_type)
 
         rows = query.order_by(Invoice.invoice_date.desc()).limit(limit).all()
-        return [
-            {
+        result = []
+        for inv, party in rows:
+            outstanding = (
+                self.payments.invoice_outstanding(inv.id)
+                if inv.status == InvoiceStatus.posted
+                else Decimal(str(inv.total))
+            )
+            result.append({
                 "id": str(inv.id),
                 "invoice_number": inv.invoice_number,
                 "invoice_date": inv.invoice_date.isoformat(),
                 "invoice_type": inv.invoice_type.value,
-                "status": inv.status.value,
+                "party_id": str(inv.party_id),
                 "party_name": party.name,
                 "party_gstin": party.gstin,
-                "total": float(inv.total),
-            }
-            for inv, party in rows
-        ]
+                "total": str(inv.total),
+                "status": inv.status.value,
+                "outstanding": str(outstanding),
+            })
+        return result

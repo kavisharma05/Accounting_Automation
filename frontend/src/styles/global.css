@@ -276,6 +276,57 @@ select {
   font-size: 0.9rem;
 }
 
+.success-banner {
+  background: #d1fae5;
+  color: var(--success);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.form-panel {
+  margin-bottom: 1.5rem;
+}
+
+.form-grid {
+  padding: 1rem 1.1rem 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+}
+
+.inline-fields {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.inline-fields select,
+.inline-fields input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.muted-hint {
+  font-size: 0.75rem;
+  color: var(--sidebar-text);
+  margin-top: 0.35rem;
+}
+
 .toolbar {
   display: flex;
   gap: 0.75rem;

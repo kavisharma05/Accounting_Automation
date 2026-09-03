@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ApiError, fetchInvoices, type InvoiceRow } from "../api/client";
+import { ApiError, fetchInvoices, searchInvoices, type InvoiceRow } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 const STATUSES = ["", "posted", "pending_approval", "draft", "cancelled"];
@@ -16,6 +16,7 @@ export function InvoicesPage() {
   const { session } = useAuth();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [status, setStatus] = useState("");
+  const [searchQ, setSearchQ] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,11 +26,9 @@ export function InvoicesPage() {
     (async () => {
       setLoading(true);
       try {
-        const data = await fetchInvoices(
-          session.orgId,
-          session.token,
-          status || undefined,
-        );
+        const data = searchQ.trim()
+          ? await searchInvoices(session.orgId, session.token, searchQ.trim())
+          : await fetchInvoices(session.orgId, session.token, status || undefined);
         if (!cancelled) setInvoices(data);
       } catch (err) {
         if (!cancelled) {
@@ -42,7 +41,7 @@ export function InvoicesPage() {
     return () => {
       cancelled = true;
     };
-  }, [session, status]);
+  }, [session, status, searchQ]);
 
   if (!session) return null;
 
@@ -51,16 +50,24 @@ export function InvoicesPage() {
       <div className="page-header">
         <div>
           <h1>Invoices</h1>
-          <p>Posted and pending invoices with outstanding balances</p>
+          <p>Purchase and sales invoices with outstanding balances</p>
         </div>
       </div>
 
       <div className="toolbar">
+        <input
+          type="search"
+          placeholder="Search number, party, GSTIN…"
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
+          style={{ minWidth: "220px" }}
+        />
         <label htmlFor="status-filter">Status</label>
         <select
           id="status-filter"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
+          disabled={!!searchQ.trim()}
         >
           <option value="">All</option>
           {STATUSES.filter(Boolean).map((s) => (
@@ -83,6 +90,8 @@ export function InvoicesPage() {
               <tr>
                 <th>Number</th>
                 <th>Date</th>
+                <th>Type</th>
+                <th>Party</th>
                 <th>Status</th>
                 <th>Total</th>
                 <th>Outstanding</th>
@@ -93,6 +102,8 @@ export function InvoicesPage() {
                 <tr key={inv.id}>
                   <td>{inv.invoice_number}</td>
                   <td>{inv.invoice_date}</td>
+                  <td>{inv.invoice_type ?? "—"}</td>
+                  <td>{inv.party_name ?? "—"}</td>
                   <td>
                     <span className={`badge ${inv.status}`}>{inv.status.replace("_", " ")}</span>
                   </td>

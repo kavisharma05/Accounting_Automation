@@ -8,11 +8,18 @@ from app.api.deps import get_db
 from app.core.exceptions import DomainError, IdempotencyConflict
 from app.core.logging import OrganizationContext
 from app.integrations.factory import get_email_provider
-from app.models.entities import Organization
+from app.models.entities import (
+    BankAccount,
+    ChartOfAccount,
+    Organization,
+    Party,
+)
 from app.schemas.phase2 import (
+    AccountListItem,
     BankAccountCreate,
     BankAccountResponse,
     CAEmailRequest,
+    PartyResponse,
     PaymentCreate,
     PaymentResponse,
     PeriodLockUpdate,
@@ -54,6 +61,51 @@ def list_payments(
 ):
     ensure_org_access(ctx, org_id)
     return DashboardService(db).list_payments(ctx)
+
+
+@router.get("/organizations/{org_id}/parties", response_model=list[PartyResponse])
+def list_parties(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    ctx: OrganizationContext = Depends(require_read),
+):
+    ensure_org_access(ctx, org_id)
+    return (
+        db.query(Party)
+        .filter(Party.organization_id == org_id, Party.deleted_at.is_(None))
+        .order_by(Party.name)
+        .all()
+    )
+
+
+@router.get("/organizations/{org_id}/accounts", response_model=list[AccountListItem])
+def list_accounts(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    ctx: OrganizationContext = Depends(require_read),
+):
+    ensure_org_access(ctx, org_id)
+    return (
+        db.query(ChartOfAccount)
+        .filter(ChartOfAccount.organization_id == org_id, ChartOfAccount.deleted_at.is_(None))
+        .order_by(ChartOfAccount.code)
+        .all()
+    )
+
+
+@router.get("/organizations/{org_id}/bank-accounts", response_model=list[BankAccountResponse])
+def list_bank_accounts(
+    org_id: UUID,
+    db: Session = Depends(get_db),
+    ctx: OrganizationContext = Depends(require_read),
+):
+    ensure_org_access(ctx, org_id)
+    return (
+        db.query(BankAccount)
+        .filter(BankAccount.organization_id == org_id)
+        .order_by(BankAccount.name)
+        .all()
+    )
 
 
 @router.post("/organizations/{org_id}/payments", response_model=PaymentResponse)

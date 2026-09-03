@@ -42,6 +42,25 @@ class BankAccountResponse(BaseModel):
     id: UUID
     name: str
     account_number: str | None
+    chart_of_account_id: UUID
+
+    model_config = {"from_attributes": True}
+
+
+class PartyResponse(BaseModel):
+    id: UUID
+    name: str
+    party_type: str
+    gstin: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class AccountListItem(BaseModel):
+    id: UUID
+    code: str
+    name: str
+    account_type: str
 
     model_config = {"from_attributes": True}
 

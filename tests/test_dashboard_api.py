@@ -140,3 +140,18 @@ def test_list_payments_empty(dashboard_client):
     )
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+def test_list_parties_and_accounts(dashboard_client):
+    client, org, token = dashboard_client
+    headers = {"Authorization": f"Bearer {token}"}
+
+    parties = client.get(f"/api/v1/organizations/{org.id}/parties", headers=headers)
+    assert parties.status_code == 200
+    assert len(parties.json()) >= 1
+
+    accounts = client.get(f"/api/v1/organizations/{org.id}/accounts", headers=headers)
+    assert accounts.status_code == 200
+    codes = [a["code"] for a in accounts.json()]
+    assert "1010" in codes
+    assert "2000" in codes

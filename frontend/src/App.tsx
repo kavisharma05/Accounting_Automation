@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import { Layout } from "./components/Layout";
+import { BankPage } from "./pages/BankPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { GstrPage } from "./pages/GstrPage";
 import { InvoicesPage } from "./pages/InvoicesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PaymentsPage } from "./pages/PaymentsPage";
@@ -28,6 +30,8 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="invoices" element={<InvoicesPage />} />
         <Route path="payments" element={<PaymentsPage />} />
+        <Route path="bank" element={<BankPage />} />
+        <Route path="gstr" element={<GstrPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
