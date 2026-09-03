@@ -8,6 +8,7 @@ Usage:
 import argparse
 import json
 import sys
+import uuid
 from io import BytesIO
 
 import httpx
@@ -42,10 +43,11 @@ def main() -> int:
         assert cfg["default_expense_account_id"]
         print("✓ pilot config")
 
-        # Phone mapping
+        # Phone mapping (unique per run — avoids duplicate constraint on re-test)
+        phone = f"+91{uuid.uuid4().int % 10**10:010d}"
         r = client.post(
             f"{base}/api/v1/organizations/{org_id}/phone-mappings",
-            json={"phone_e164": "+919999990001"},
+            json={"phone_e164": phone},
         )
         r.raise_for_status()
         print("✓ phone mapping")

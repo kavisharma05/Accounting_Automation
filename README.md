@@ -12,16 +12,16 @@ Indian SMB accounting automation: WhatsApp invoice capture, AI extraction, doubl
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture |
 | [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md) | Implementation design |
 | [PILOT.md](PILOT.md) | Pilot runbook |
+| [STAGING.md](STAGING.md) | Staging deployment (Docker) |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Production deployment |
 
 ## Quick start
 
 ```bash
 pip install -e ".[dev]"
-export DATABASE_URL=sqlite:///./dev.db  # or use docker compose
-python -c "from app.core.database import Base, engine; import app.models.entities; Base.metadata.create_all(engine)"
+python scripts/init_db.py --create-all   # or: alembic upgrade head with Postgres
 uvicorn app.main:app --reload
-pytest tests/ -v
+pytest tests/ -q
 ```
 
 ## Dashboard UI
@@ -54,7 +54,19 @@ docker compose --profile tools run --rm seed
 
 Or use the `frontend` compose service for hot-reload during development.
 
-## Pilot (next step)
+## Staging deploy
+
+Production-like Docker stack with Postgres, Redis, migrations, and seeded pilot org:
+
+```bash
+cp .env.staging.example .env.staging   # set SECRET_KEY
+./scripts/staging_up.sh
+./scripts/staging_verify.sh
+```
+
+See [STAGING.md](STAGING.md).
+
+## Pilot smoke test
 
 ```bash
 docker compose up --build -d
