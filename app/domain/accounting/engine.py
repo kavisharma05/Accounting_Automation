@@ -77,6 +77,7 @@ class AccountingEngine:
             je_lines.append(je_line)
             self.db.add(je_line)
 
+        self.db.flush()
         validate_balanced_lines(je_lines)
         return entry
 
