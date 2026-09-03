@@ -63,12 +63,14 @@ def configure_pilot_accounts(
         receivable = _coa_by_code(db, organization_id, "1100")
         revenue = _coa_by_code(db, organization_id, "4000")
         output_tax = _coa_by_code(db, organization_id, "2100")
+        tds_payable = _coa_by_code(db, organization_id, "2200")
         org.default_expense_account_id = expense.id
         org.default_payable_account_id = payable.id
         org.default_input_tax_account_id = input_tax.id
         org.default_receivable_account_id = receivable.id
         org.default_revenue_account_id = revenue.id
         org.default_output_tax_account_id = output_tax.id
+        org.default_tds_payable_account_id = tds_payable.id
     else:
         if expense_account_id:
             _validate_coa(db, organization_id, expense_account_id)

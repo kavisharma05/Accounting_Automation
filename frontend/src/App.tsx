@@ -3,6 +3,7 @@ import { useAuth } from "./auth/AuthContext";
 import { Layout } from "./components/Layout";
 import { BankPage } from "./pages/BankPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { CompliancePage } from "./pages/CompliancePage";
 import { GstrPage } from "./pages/GstrPage";
 import { InvoicesPage } from "./pages/InvoicesPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="notes" element={<NotesPage />} />
         <Route path="bank" element={<BankPage />} />
         <Route path="gstr" element={<GstrPage />} />
+        <Route path="compliance" element={<CompliancePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

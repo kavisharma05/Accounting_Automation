@@ -106,6 +106,9 @@ class Organization(Base, TimestampMixin, SoftDeleteMixin):
     default_output_tax_account_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("chart_of_accounts.id"), nullable=True
     )
+    default_tds_payable_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("chart_of_accounts.id"), nullable=True
+    )
     locked_through_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     ca_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
@@ -462,3 +465,45 @@ class ReconciliationMatch(Base, TimestampMixin):
     matched_entity_type: Mapped[str] = mapped_column(String(64))
     matched_entity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
     match_confidence: Mapped[float | None] = mapped_column(Numeric(5, 4))
+
+
+class TdsDeduction(Base, TimestampMixin):
+    __tablename__ = "tds_deductions"
+    __table_args__ = (Index("ix_tds_org_payment", "organization_id", "payment_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    payment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("payments.id"), index=True)
+    party_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("parties.id"))
+    tds_section: Mapped[str] = mapped_column(String(16), nullable=False)
+    taxable_amount: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
+    tds_rate: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    tds_amount: Mapped[float] = mapped_column(Numeric(18, 2), nullable=False)
+    tax_rule_version_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tax_rule_versions.id"))
+    computation_snapshot: Mapped[dict | None] = mapped_column(JSON)
+    journal_entry_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("journal_entries.id"))
+
+
+class ComplianceEntryStatus(str, enum.Enum):
+    pending = "pending"
+    completed = "completed"
+    skipped = "skipped"
+
+
+class ComplianceCalendarEntry(Base, TimestampMixin):
+    __tablename__ = "compliance_calendar_entries"
+    __table_args__ = (
+        Index("ix_compliance_org_due", "organization_id", "due_date"),
+        UniqueConstraint("organization_id", "entry_type", "due_date", "reference_period"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    entry_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    due_date: Mapped[date] = mapped_column(Date, nullable=False)
+    reference_period: Mapped[str] = mapped_column(String(32), default="")
+    status: Mapped[ComplianceEntryStatus] = mapped_column(
+        Enum(ComplianceEntryStatus), default=ComplianceEntryStatus.pending
+    )
+    notes: Mapped[str | None] = mapped_column(String(512))

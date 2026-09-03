@@ -6,6 +6,7 @@ from app.models.entities import (
     BankAccount,
     BankStatementTransaction,
     ChartOfAccount,
+    ComplianceCalendarEntry,
     CreditNote,
     DebitNote,
     Document,
@@ -24,6 +25,7 @@ from app.models.entities import (
     PhoneOrgMapping,
     ReconciliationMatch,
     TaxRuleVersion,
+    TdsDeduction,
     User,
 )
 
@@ -35,6 +37,7 @@ __all__ = [
     "BankAccount",
     "BankStatementTransaction",
     "ChartOfAccount",
+    "ComplianceCalendarEntry",
     "CreditNote",
     "DebitNote",
     "Document",
@@ -53,5 +56,6 @@ __all__ = [
     "PhoneOrgMapping",
     "ReconciliationMatch",
     "TaxRuleVersion",
+    "TdsDeduction",
     "User",
 ]

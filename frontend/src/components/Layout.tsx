@@ -56,6 +56,12 @@ export function Layout() {
           >
             GSTR
           </NavLink>
+          <NavLink
+            to="/compliance"
+            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+          >
+            Compliance
+          </NavLink>
         </nav>
         <div className="sidebar-footer">
           <div>{session.email}</div>

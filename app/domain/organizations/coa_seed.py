@@ -13,6 +13,7 @@ DEFAULT_ACCOUNTS = [
     ("1400", "Input GST", AccountType.asset),
     ("2000", "Accounts Payable", AccountType.liability),
     ("2100", "Output GST", AccountType.liability),
+    ("2200", "TDS Payable", AccountType.liability),
     ("3000", "Owner's Equity", AccountType.equity),
     ("4000", "Sales Revenue", AccountType.revenue),
     ("5000", "General Expense", AccountType.expense),

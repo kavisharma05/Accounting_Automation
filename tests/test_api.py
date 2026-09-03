@@ -46,7 +46,7 @@ def test_create_organization_and_accounts(client):
     assert org_resp.status_code == 200
     org_id = org_resp.json()["id"]
 
-    # COA seeded on org creation (9 default accounts per PRD_DECISIONS Q-25)
+    # COA seeded on org creation (10 default accounts incl. TDS Payable)
     custom = client.post(
         f"/api/v1/organizations/{org_id}/accounts",
         json={"code": "5100", "name": "Travel Expense", "account_type": "expense"},

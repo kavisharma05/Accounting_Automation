@@ -15,7 +15,7 @@ def test_seed_coa(db):
     session, org = db
     accounts = seed_chart_of_accounts(session, org.id)
     session.commit()
-    assert len(accounts) == 9
+    assert len(accounts) == 10
     codes = {a.code for a in accounts}
     assert "5000" in codes
     assert "2000" in codes

@@ -13,6 +13,9 @@ import {
 } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
+const API_BASE = import.meta.env.VITE_API_URL ?? "/api/v1";
+const TDS_SECTIONS = ["194C", "194J", "194H", "194I"];
+
 function formatInr(value: string) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -31,6 +34,7 @@ export function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const [partyId, setPartyId] = useState("");
   const [amount, setAmount] = useState("");
@@ -38,6 +42,8 @@ export function PaymentsPage() {
   const [reference, setReference] = useState("");
   const [applyInvoiceId, setApplyInvoiceId] = useState("");
   const [applyAmount, setApplyAmount] = useState("");
+
+  const [tdsSection, setTdsSection] = useState("194C");
 
   const canWrite =
     session?.role === "owner" || session?.role === "accountant" || session?.role === "admin";
@@ -111,6 +117,37 @@ export function PaymentsPage() {
   }
 
   const partyInvoices = invoices.filter((i) => !partyId || i.party_id === partyId);
+
+  async function handleApplyTds(paymentId: string) {
+    if (!session || !canWrite) return;
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const resp = await fetch(
+        `${API_BASE}/organizations/${session.orgId}/payments/${paymentId}/tds`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ section: tdsSection }),
+        },
+      );
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new ApiError(resp.status, body.detail ?? "TDS failed");
+      }
+      const data = await resp.json();
+      setSuccess(`TDS applied: ₹${data.tds_amount} under ${data.tds_section}`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "TDS application failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (!session) return null;
 
@@ -215,6 +252,19 @@ export function PaymentsPage() {
 
       {loading ? <p>Loading payments…</p> : null}
 
+      {canWrite && payments.length > 0 ? (
+        <div className="toolbar">
+          <label htmlFor="tds-section">Apply TDS section</label>
+          <select id="tds-section" value={tdsSection} onChange={(e) => setTdsSection(e.target.value)}>
+            {TDS_SECTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       <div className="panel">
         {!loading && payments.length === 0 ? (
           <div className="empty-state">No payments recorded yet.</div>
@@ -226,6 +276,7 @@ export function PaymentsPage() {
                 <th>Amount</th>
                 <th>Reference</th>
                 <th>Journal entry</th>
+                {canWrite ? <th>TDS</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -235,6 +286,18 @@ export function PaymentsPage() {
                   <td>{formatInr(payment.amount)}</td>
                   <td>{payment.reference ?? "—"}</td>
                   <td>{payment.journal_entry_id ? payment.journal_entry_id.slice(0, 8) + "…" : "—"}</td>
+                  {canWrite ? (
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={busy}
+                        onClick={() => handleApplyTds(payment.id)}
+                      >
+                        Apply {tdsSection}
+                      </button>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

@@ -16,6 +16,7 @@ Vertical slices in dependency order. Each milestone has a deliverable and gate.
 | M10 Dashboard API | Summary, invoices, payments lists | JWT + role auth | Done |
 | M10b Dashboard UI | React SPA: login, overview, invoices, payments | JWT auth flow | Done |
 | M13 Phase 3 | Sales invoices, credit/debit notes, GSTR prep, e-invoice | Phase 3 tests pass | Done |
+| M14 Phase 4 | TDS compute/apply, compliance calendar | TDS tests pass | Done |
 | M7 WhatsApp | Webhook, media, confirmation flow | Mock E2E test | In progress |
 | M8 Tax | TaxRuleVersion, basic GST split | Rule version recorded | In progress |
 | M9 Reporting | Ledger Excel/PDF export | Output validates | In progress |
@@ -48,4 +49,5 @@ Vertical slices in dependency order. Each milestone has a deliverable and gate.
 **Phase 1 pilot:** M1–M5, M7 (mock), M8 (basic), M11  
 **Phase 2:** M6, M9, M10, live adapters, Celery scale-up  
 **Phase 3:** E-invoice, GSTR-1/3B prep, sales invoices, credit/debit notes, search — **Done (API)**  
-**Phase 4:** TDS computation; compliance calendar automation
+**Phase 4:** TDS computation, compliance calendar — **Done (API + UI)**  
+**Phase 5:** Production hardening; hosting re-evaluation; performance; DPDP audit; optional Postgres RLS

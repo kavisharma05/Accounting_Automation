@@ -15,6 +15,7 @@ from app.core.database import SessionLocal, engine, Base
 from app.core.security import hash_password
 from app.domain.organizations.coa_seed import seed_chart_of_accounts
 from app.domain.organizations.pilot_config import configure_pilot_accounts
+from app.domain.tax.default_rules import seed_default_tax_rules
 from app.models.entities import (
     MembershipRole,
     Organization,
@@ -41,6 +42,7 @@ def main() -> None:
         db.flush()
         seed_chart_of_accounts(db, org.id)
         configure_pilot_accounts(db, org.id, auto_from_coa=True)
+        seed_default_tax_rules(db, org.id)
 
         user = User(email=args.email, password_hash=hash_password(args.password))
         db.add(user)
