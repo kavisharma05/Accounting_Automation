@@ -34,12 +34,20 @@ class Settings(BaseSettings):
     auto_post_confidence_threshold: float = 0.0  # 0 = always require confirmation (IMP-DEFAULT)
     job_max_retries: int = 3
 
+    environment: str = "development"  # development | staging | production
+
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     serve_frontend: bool = True
+
+    webhook_rate_limit_per_minute: int = 120
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
 
 
 settings = Settings()

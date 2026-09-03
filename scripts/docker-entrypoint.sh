@@ -9,7 +9,11 @@ psycopg2.connect(os.environ['DATABASE_URL'].replace('+psycopg2', ''))
   sleep 2
 done
 
-echo "Initializing database schema..."
-python scripts/init_db.py
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
+  echo "Running Alembic migrations..."
+  alembic upgrade head
+else
+  echo "Skipping migrations (RUN_MIGRATIONS=false)"
+fi
 
 exec "$@"

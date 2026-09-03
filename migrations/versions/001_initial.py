@@ -1,10 +1,9 @@
-"""Initial schema
+"""Initial schema — creates all tables from SQLAlchemy metadata.
 
 Revision ID: 001
 """
+
 from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision = "001"
 down_revision = None
@@ -13,10 +12,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Tables created via Base.metadata.create_all in dev/test;
-    # production uses autogenerate — run: alembic revision --autogenerate
-    pass
+    import app.models.entities  # noqa: F401
+    from app.core.database import Base
+
+    bind = op.get_bind()
+    Base.metadata.create_all(bind)
 
 
 def downgrade() -> None:
-    pass
+    import app.models.entities  # noqa: F401
+    from app.core.database import Base
+
+    bind = op.get_bind()
+    Base.metadata.drop_all(bind)

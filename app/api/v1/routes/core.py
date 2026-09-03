@@ -16,6 +16,7 @@ from app.models.entities import ChartOfAccount, Organization, OrganizationMember
 from app.schemas.common import (
     ChartOfAccountCreate,
     ChartOfAccountResponse,
+    HealthResponse,
     JournalEntryCreate,
     JournalEntryResponse,
     LoginRequest,
@@ -30,9 +31,26 @@ from app.services.reporting_service import ReportingService
 router = APIRouter()
 
 
-@router.get("/health")
+@router.get("/health", response_model=HealthResponse)
 def health():
-    return {"status": "ok"}
+    return HealthResponse(status="ok")
+
+
+@router.get("/health/live", response_model=HealthResponse)
+def health_live():
+    """Liveness probe — process is running."""
+    return HealthResponse(status="ok")
+
+
+@router.get("/health/ready")
+def health_ready():
+    """Readiness probe — DB and Redis reachable."""
+    from app.core.health import readiness_status
+
+    payload = readiness_status()
+    if payload["status"] != "ready":
+        raise HTTPException(503, payload)
+    return payload
 
 
 @router.post("/organizations", response_model=OrganizationResponse)

@@ -30,6 +30,13 @@ async def whatsapp_webhook(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    from app.core.rate_limit import get_webhook_limiter
+
+    client_ip = request.client.host if request.client else "unknown"
+    limiter = get_webhook_limiter(settings.webhook_rate_limit_per_minute)
+    if not limiter.allow(client_ip):
+        raise HTTPException(429, "Rate limit exceeded")
+
     body = await request.body()
     if not verify_whatsapp_signature(body, request.headers.get("X-Hub-Signature-256")):
         raise HTTPException(401, "Invalid signature")

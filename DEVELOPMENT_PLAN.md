@@ -21,9 +21,9 @@ Vertical slices in dependency order. Each milestone has a deliverable and gate.
 | M8 Tax | TaxRuleVersion, basic GST split | Rule version recorded | In progress |
 | M9 Reporting | Ledger Excel/PDF export | Output validates | In progress |
 | M10 Dashboard API | JWT auth, read endpoints | API integration tests | In progress |
-| M11 Hardening | Audit, idempotency, DLQ | Security checklist | In progress |
+| M11 Hardening | Audit, idempotency, DLQ | Security checklist | Done |
 | M12 Pilot | PILOT.md runbook | Real workflow checklist | Documented |
-| M13 Production | DEPLOYMENT.md, CI deploy | Health checks pass | Documented |
+| M13 Production | DEPLOYMENT.md, CI deploy | Health checks pass | Done |
 
 ## Build order (critical path)
 
@@ -50,4 +50,4 @@ Vertical slices in dependency order. Each milestone has a deliverable and gate.
 **Phase 2:** M6, M9, M10, live adapters, Celery scale-up  
 **Phase 3:** E-invoice, GSTR-1/3B prep, sales invoices, credit/debit notes, search — **Done (API)**  
 **Phase 4:** TDS computation, compliance calendar — **Done (API + UI)**  
-**Phase 5:** Production hardening; hosting re-evaluation; performance; DPDP audit; optional Postgres RLS
+**Phase 5:** Production hardening — migrations, health probes, CI, rate limits — **Done**

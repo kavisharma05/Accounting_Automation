@@ -20,6 +20,9 @@ Code → CI (GitHub Actions) → Docker build → Deploy → Migrate → Health 
 | `S3_*` or `LOCAL_STORAGE_PATH` | Yes | Versioned object storage in prod |
 | `MESSAGING_PROVIDER` | Yes | `whatsapp` or `mock` |
 | `DOCUMENT_PROVIDER` | Yes | `claude` or `mock` |
+| `ENVIRONMENT` | Prod | `production` enables startup validation |
+| `RUN_MIGRATIONS` | Docker | `true` (default) runs `alembic upgrade head` on boot |
+| `WEBHOOK_RATE_LIMIT_PER_MINUTE` | No | Default 120 |
 
 ## Docker Compose (development)
 
@@ -29,46 +32,48 @@ docker compose up --build
 
 Services: `api` (port 8000), `worker`, `db`, `redis`.
 
+## Health checks
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/health` | Basic status |
+| `GET /api/v1/health/live` | **Liveness** — process up (K8s/load balancer) |
+| `GET /api/v1/health/ready` | **Readiness** — PostgreSQL + Redis reachable (503 if degraded) |
+
+- Worker process: `python -m app.workers.runner`
+
 ## Database migrations
 
 ```bash
-# Development bootstrap
-python -c "from app.core.database import Base, engine; Base.metadata.create_all(engine)"
+# Development
+python scripts/init_db.py
 
-# Production
+# Production (Docker entrypoint runs this automatically)
 alembic upgrade head
+
+# Dev fallback without Alembic
+python scripts/init_db.py --create-all
 ```
 
-## Health checks
+Set `RUN_MIGRATIONS=false` to skip migrations in Docker entrypoint.
 
-- `GET /api/v1/health` → 200 `{"status":"ok"}`
-- Worker process running: `python -m app.workers.runner`
+## Security checklist (pre-pilot)
 
-## Monitoring
+Use this before exposing the app to real users or WhatsApp traffic.
 
-- Structured application logs
-- Sentry DSN (optional) for error tracking
-- Alert on: dead-letter jobs, 5xx rate, DB connection failures
+| Item | Action |
+|------|--------|
+| Secrets | Generate a strong `SECRET_KEY`; never use `change-me` in production |
+| Environment | Set `ENVIRONMENT=production` to enable startup validation |
+| Providers | Use real `MESSAGING_PROVIDER` / `DOCUMENT_PROVIDER` only with valid API keys |
+| WhatsApp | Configure `WHATSAPP_APP_SECRET` so webhook HMAC verification is enforced |
+| Rate limit | Tune `WEBHOOK_RATE_LIMIT_PER_MINUTE` (default 120) for expected traffic |
+| TLS | Terminate HTTPS at load balancer or reverse proxy |
+| Database | Restrict PostgreSQL to private network; use managed backups |
+| Redis | Restrict Redis to private network; no public exposure |
+| Storage | Use versioned S3-compatible storage; block public ACLs |
+| JWT | Rotate `SECRET_KEY` invalidates existing tokens — plan maintenance window |
+| Logging | Avoid logging full document payloads or PII in production |
+| Migrations | Run `alembic upgrade head` before traffic; verify with `/api/v1/health/ready` |
 
-## Backups
-
-- PostgreSQL: daily automated backup (managed provider or pg_dump cron)
-- Object storage: versioning enabled on bucket
-- RPO target: 24h **(IMP-DEFAULT)**
-- RTO target: 4h **(IMP-DEFAULT)**
-
-## Rollback
-
-1. Revert container image to previous tag
-2. Run `alembic downgrade -1` only if migration is backward-compatible
-3. Verify health endpoint and sample ledger query
-
-## Security checklist (pre-production)
-
-- [ ] WhatsApp webhook signature verification enabled (`WHATSAPP_APP_SECRET`)
-- [ ] JWT secret rotated from dev default
-- [ ] Database credentials in secret manager
-- [ ] HTTPS termination at load balancer
-- [ ] Rate limiting on webhooks (TBD implementation)
-- [ ] PII not logged in extraction payloads
-- [ ] Tenant isolation tests passing in CI
+See also [SECURITY.md](SECURITY.md) for auth, tenant isolation, and idempotency details.

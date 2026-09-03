@@ -14,10 +14,12 @@ from app.api.webhooks.whatsapp import router as whatsapp_router
 from app.core.config import settings
 from app.core.exceptions import DomainError
 from app.core.logging import configure_logging
+from app.core.startup import validate_production_settings
 
 
 def create_app() -> FastAPI:
     configure_logging(settings.debug)
+    validate_production_settings()
     app = FastAPI(title=settings.app_name, version="0.1.0")
 
     app.add_middleware(
