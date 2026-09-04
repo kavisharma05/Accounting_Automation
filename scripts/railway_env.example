@@ -1,0 +1,18 @@
+# Paste into Railway project variables (API + Worker services).
+# Reference Postgres/Redis from the Railway dashboard using:
+#   DATABASE_URL=${{Postgres.DATABASE_URL}}
+#   REDIS_URL=${{Redis.REDIS_URL}}
+
+SECRET_KEY=generate-with-openssl-rand-hex-32
+ENVIRONMENT=staging
+RUN_MIGRATIONS=true
+SERVE_FRONTEND=true
+
+MESSAGING_PROVIDER=mock
+DOCUMENT_PROVIDER=mock
+STORAGE_PROVIDER=local
+LOCAL_STORAGE_PATH=/tmp/documents
+GSP_PROVIDER=mock
+
+# Set after first deploy — use your Railway public domain:
+# CORS_ORIGINS=https://your-api.up.railway.app

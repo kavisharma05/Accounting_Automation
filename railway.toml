@@ -1,0 +1,11 @@
+# Railway config for services deployed from this repo.
+# API service: set healthcheck to /api/v1/health/ready in the dashboard.
+# Worker service: set WORKER_MODE=true (no HTTP healthcheck needed).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

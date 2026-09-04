@@ -20,10 +20,10 @@ COPY migrations ./migrations
 COPY scripts ./scripts
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-RUN chmod +x scripts/docker-entrypoint.sh
+RUN sed -i 's/\r$//' scripts/docker-entrypoint.sh && chmod +x scripts/docker-entrypoint.sh
 RUN pip install --no-cache-dir -e ".[dev]"
 
 EXPOSE 8000
 
 ENTRYPOINT ["scripts/docker-entrypoint.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "if [ \"${WORKER_MODE:-false}\" = \"true\" ]; then python -m app.workers.runner; else uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}; fi"]
