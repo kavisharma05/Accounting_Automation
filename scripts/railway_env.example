@@ -14,5 +14,11 @@ STORAGE_PROVIDER=local
 LOCAL_STORAGE_PATH=/tmp/documents
 GSP_PROVIDER=mock
 
+# Document AI — NVIDIA Integrate (OpenAI-compatible)
+# DOCUMENT_PROVIDER=nvidia
+# DOCUMENT_AI_API_KEY=
+# DOCUMENT_AI_BASE_URL=https://integrate.api.nvidia.com/v1
+# DOCUMENT_AI_MODEL=deepseek-ai/deepseek-v4-pro-0813
+
 # Set after first deploy — use your Railway public domain:
 # CORS_ORIGINS=https://your-api.up.railway.app

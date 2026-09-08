@@ -1,12 +1,12 @@
 import logging
-from datetime import UTC, date, datetime
-from decimal import Decimal
+from datetime import UTC, datetime
 from uuid import UUID
 
 from app.core.database import SessionLocal
 from app.core.logging import OrganizationContext
+from app.integrations.document_understanding.parse import extraction_from_dict
 from app.integrations.factory import get_messaging_provider
-from app.integrations.protocols import DocumentExtraction, ExtractionLineItem, OutboundMessage
+from app.integrations.protocols import OutboundMessage
 from app.models.entities import AIExtractionRecord, BackgroundJob, JobStatus
 from app.services.document_service import DocumentService
 from app.services.invoice_service import InvoiceService
@@ -80,27 +80,7 @@ def run_extract_and_propose(
         record = _sync_extract(db, ctx, UUID(document_id))
 
         extracted = record.extracted_data
-        extraction = DocumentExtraction(
-            vendor_name=extracted.get("vendor_name"),
-            vendor_gstin=extracted.get("vendor_gstin"),
-            invoice_number=extracted.get("invoice_number"),
-            invoice_date=date.fromisoformat(extracted["invoice_date"]) if extracted.get("invoice_date") else None,
-            invoice_type=extracted.get("invoice_type", "purchase"),
-            subtotal=Decimal(extracted.get("subtotal", "0")),
-            tax_total=Decimal(extracted.get("tax_total", "0")),
-            total=Decimal(extracted.get("total", "0")),
-            line_items=[
-                ExtractionLineItem(
-                    description="Line",
-                    quantity=Decimal("1"),
-                    unit_price=Decimal(extracted.get("subtotal", "0")),
-                    tax_rate=Decimal("18"),
-                    line_total=Decimal(extracted.get("subtotal", "0")),
-                )
-            ],
-            confidence=float(extracted.get("confidence", 0)),
-            raw=extracted,
-        )
+        extraction = extraction_from_dict(extracted)
 
         inv_svc = InvoiceService(db)
         if expense_account_id and payable_account_id:

@@ -26,6 +26,8 @@ def validate_production_settings() -> None:
         errors.append("WHATSAPP_APP_SECRET required when MESSAGING_PROVIDER=whatsapp")
     if settings.document_provider == "claude" and not settings.anthropic_api_key:
         errors.append("ANTHROPIC_API_KEY required when DOCUMENT_PROVIDER=claude")
+    if settings.document_provider == "nvidia" and not settings.document_ai_api_key:
+        errors.append("DOCUMENT_AI_API_KEY required when DOCUMENT_PROVIDER=nvidia")
 
     if errors:
         for msg in errors:

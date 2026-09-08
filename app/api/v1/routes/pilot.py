@@ -100,37 +100,12 @@ async def propose_invoice_from_document(
     document_id: UUID,
     db: Session = Depends(get_db),
 ):
-    from datetime import date
-    from decimal import Decimal
-
-    from app.integrations.protocols import DocumentExtraction, ExtractionLineItem
+    from app.integrations.document_understanding.parse import extraction_from_dict
 
     ctx = OrganizationContext(organization_id=org_id)
     doc_svc = DocumentService(db)
     record = await doc_svc.extract(ctx, document_id)
-    data = record.extracted_data
-
-    extraction = DocumentExtraction(
-        vendor_name=data.get("vendor_name"),
-        vendor_gstin=data.get("vendor_gstin"),
-        invoice_number=data.get("invoice_number"),
-        invoice_date=date.fromisoformat(data["invoice_date"]) if data.get("invoice_date") else None,
-        invoice_type=data.get("invoice_type", "purchase"),
-        subtotal=Decimal(data.get("subtotal", "0")),
-        tax_total=Decimal(data.get("tax_total", "0")),
-        total=Decimal(data.get("total", "0")),
-        line_items=[
-            ExtractionLineItem(
-                description="Line",
-                quantity=Decimal("1"),
-                unit_price=Decimal(data.get("subtotal", "0")),
-                tax_rate=Decimal("18"),
-                line_total=Decimal(data.get("subtotal", "0")),
-            )
-        ],
-        confidence=float(data.get("confidence", 0)),
-        raw=data,
-    )
+    extraction = extraction_from_dict(record.extracted_data)
 
     expense_id, payable_id, tax_id = get_org_account_defaults(db, org_id)
     inv_svc = InvoiceService(db)

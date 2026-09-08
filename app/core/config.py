@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     aws_secret_access_key: str = ""
 
     anthropic_api_key: str = ""
+    anthropic_model: str = "claude-sonnet-4-20250514"
+
+    # Generic document AI (NVIDIA Integrate / OpenAI-compatible APIs)
+    document_ai_api_key: str = ""
+    document_ai_base_url: str = "https://integrate.api.nvidia.com/v1"
+    document_ai_model: str = "deepseek-ai/deepseek-v4-pro-0813"
     whatsapp_verify_token: str = "dev-verify-token"
     whatsapp_app_secret: str = ""
     whatsapp_access_token: str = ""
