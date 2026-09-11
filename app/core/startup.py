@@ -28,6 +28,14 @@ def validate_production_settings() -> None:
         errors.append("ANTHROPIC_API_KEY required when DOCUMENT_PROVIDER=claude")
     if settings.document_provider == "nvidia" and not settings.document_ai_api_key:
         errors.append("DOCUMENT_AI_API_KEY required when DOCUMENT_PROVIDER=nvidia")
+    if settings.storage_provider == "s3" and not (
+        settings.s3_bucket
+        and settings.aws_access_key_id
+        and settings.aws_secret_access_key
+    ):
+        errors.append(
+            "S3_BUCKET, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY required when STORAGE_PROVIDER=s3"
+        )
 
     if errors:
         for msg in errors:

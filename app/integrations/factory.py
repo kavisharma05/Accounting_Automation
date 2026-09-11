@@ -46,6 +46,14 @@ def get_document_provider() -> DocumentUnderstandingProvider:
 
 
 def get_storage_provider() -> StorageProvider:
+    if settings.storage_provider == "s3":
+        try:
+            from app.integrations.storage.s3 import S3StorageProvider
+
+            return S3StorageProvider()
+        except Exception:
+            logger.exception("S3 storage init failed; falling back to local storage")
+            return LocalStorageProvider()
     return LocalStorageProvider()
 
 
