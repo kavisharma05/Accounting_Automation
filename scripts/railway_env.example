@@ -18,7 +18,7 @@ GSP_PROVIDER=mock
 # DOCUMENT_PROVIDER=nvidia
 # DOCUMENT_AI_API_KEY=
 # DOCUMENT_AI_BASE_URL=https://integrate.api.nvidia.com/v1
-# DOCUMENT_AI_MODEL=deepseek-ai/deepseek-v4-pro-0813
+# DOCUMENT_AI_MODEL=meta/llama-3.2-11b-vision-instruct
 
 # Set after first deploy — use your Railway public domain:
 # CORS_ORIGINS=https://your-api.up.railway.app

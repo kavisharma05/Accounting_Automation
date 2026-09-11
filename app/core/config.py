@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # Generic document AI (NVIDIA Integrate / OpenAI-compatible APIs)
     document_ai_api_key: str = ""
     document_ai_base_url: str = "https://integrate.api.nvidia.com/v1"
-    document_ai_model: str = "deepseek-ai/deepseek-v4-pro-0813"
+    document_ai_model: str = "meta/llama-3.2-11b-vision-instruct"
     whatsapp_verify_token: str = "dev-verify-token"
     whatsapp_app_secret: str = ""
     whatsapp_access_token: str = ""
