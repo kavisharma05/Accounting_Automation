@@ -76,6 +76,63 @@ def _to_decimal(value, default: str = "0") -> Decimal:
     return Decimal(cleaned)
 
 
+def reconcile_amounts(
+    subtotal: Decimal,
+    tax_total: Decimal,
+    total: Decimal,
+    line_items: list[ExtractionLineItem],
+) -> tuple[Decimal, Decimal, Decimal]:
+    """Align subtotal, tax, and total for balanced journal posting."""
+    line_subtotal = sum((item.quantity * item.unit_price for item in line_items), Decimal("0"))
+    line_gross = sum((item.line_total for item in line_items if item.line_total > 0), Decimal("0"))
+
+    if line_subtotal > 0:
+        subtotal = line_subtotal
+    elif line_gross > tax_total > 0:
+        subtotal = line_gross - tax_total
+
+    balanced_total = subtotal + tax_total
+    if line_gross > 0 and abs(line_gross - balanced_total) <= Decimal("1"):
+        total = line_gross
+    elif abs(total - balanced_total) > Decimal("0.01"):
+        total = balanced_total
+
+    if abs(total - balanced_total) > Decimal("0.01"):
+        total = balanced_total
+
+    return subtotal, tax_total, total
+
+
+def reconcile_extraction(extraction: DocumentExtraction) -> DocumentExtraction:
+    subtotal, tax_total, total = reconcile_amounts(
+        extraction.subtotal,
+        extraction.tax_total,
+        extraction.total,
+        extraction.line_items,
+    )
+    if (
+        subtotal == extraction.subtotal
+        and tax_total == extraction.tax_total
+        and total == extraction.total
+    ):
+        return extraction
+
+    raw = {**extraction.raw, "amounts_reconciled": True}
+    return DocumentExtraction(
+        vendor_name=extraction.vendor_name,
+        vendor_gstin=extraction.vendor_gstin,
+        invoice_number=extraction.invoice_number,
+        invoice_date=extraction.invoice_date,
+        invoice_type=extraction.invoice_type,
+        subtotal=subtotal,
+        tax_total=tax_total,
+        total=total,
+        line_items=extraction.line_items,
+        confidence=extraction.confidence,
+        raw=raw,
+    )
+
+
 def extraction_from_dict(data: dict) -> DocumentExtraction:
     items = [
         ExtractionLineItem(

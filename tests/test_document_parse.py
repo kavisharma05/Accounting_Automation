@@ -3,7 +3,9 @@ from decimal import Decimal
 from app.integrations.document_understanding.parse import (
     extraction_from_dict,
     parse_json_from_llm_text,
+    reconcile_amounts,
 )
+from app.integrations.protocols import ExtractionLineItem
 
 
 def test_parse_json_from_llm_text_strips_markdown_fence():
@@ -37,3 +39,31 @@ def test_extraction_from_dict_parses_line_items():
     assert extraction.total == Decimal("1180")
     assert len(extraction.line_items) == 1
     assert extraction.line_items[0].description == "Supplies"
+
+
+def test_reconcile_amounts_uses_line_items_when_header_totals_mismatch():
+    line_items = [
+        ExtractionLineItem(
+            description="Laptop",
+            quantity=Decimal("1"),
+            unit_price=Decimal("42000"),
+            tax_rate=Decimal("18"),
+            line_total=Decimal("49560"),
+        ),
+        ExtractionLineItem(
+            description="ADP unit",
+            quantity=Decimal("1"),
+            unit_price=Decimal("4500"),
+            tax_rate=Decimal("18"),
+            line_total=Decimal("5310"),
+        ),
+    ]
+    subtotal, tax_total, total = reconcile_amounts(
+        Decimal("54670"),
+        Decimal("8370"),
+        Decimal("63040"),
+        line_items,
+    )
+    assert subtotal == Decimal("46500")
+    assert tax_total == Decimal("8370")
+    assert total == Decimal("54870")

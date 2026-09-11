@@ -78,3 +78,63 @@ def test_duplicate_invoice_rejected(db):
             payable_account_id=payable.id,
             input_tax_account_id=gst.id,
         )
+
+
+def test_mismatched_extraction_totals_post_balanced(db):
+    session, org = db
+    seed_chart_of_accounts(session, org.id)
+    ctx = OrganizationContext(organization_id=org.id)
+    svc = InvoiceService(session)
+    extraction = DocumentExtraction(
+        vendor_name="Sharma Computers",
+        vendor_gstin="29AABC51429B1ZB",
+        invoice_number="BR-2026-00001",
+        invoice_date=date.today(),
+        invoice_type="purchase",
+        subtotal=Decimal("54670"),
+        tax_total=Decimal("8370"),
+        total=Decimal("63040"),
+        line_items=[
+            ExtractionLineItem(
+                description="Laptop",
+                quantity=Decimal("1"),
+                unit_price=Decimal("42000"),
+                tax_rate=Decimal("18"),
+                line_total=Decimal("49560"),
+            ),
+            ExtractionLineItem(
+                description="ADP unit",
+                quantity=Decimal("1"),
+                unit_price=Decimal("4500"),
+                tax_rate=Decimal("18"),
+                line_total=Decimal("5310"),
+            ),
+        ],
+        confidence=0.9,
+        raw={},
+    )
+
+    expense = session.query(ChartOfAccount).filter_by(code="5000").first()
+    payable = session.query(ChartOfAccount).filter_by(code="2000").first()
+    gst = session.query(ChartOfAccount).filter_by(code="1400").first()
+
+    inv = svc.create_from_extraction(
+        ctx,
+        extraction,
+        expense_account_id=expense.id,
+        payable_account_id=payable.id,
+        input_tax_account_id=gst.id,
+    )
+    assert inv.subtotal == Decimal("46500")
+    assert inv.total == Decimal("54870")
+
+    posted = svc.confirm_and_post(
+        ctx,
+        inv.id,
+        expense_account_id=expense.id,
+        payable_account_id=payable.id,
+        input_tax_account_id=gst.id,
+    )
+    session.commit()
+    assert posted.status.value == "posted"
+    assert posted.journal_entry_id is not None

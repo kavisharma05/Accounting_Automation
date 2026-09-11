@@ -8,6 +8,7 @@ from app.core.exceptions import NotFoundError, ValidationError
 from app.core.logging import OrganizationContext
 from app.domain.accounting.engine import AccountingEngine
 from app.domain.tax.engine import TaxEngine
+from app.integrations.document_understanding.parse import reconcile_amounts, reconcile_extraction
 from app.integrations.protocols import DocumentExtraction
 from app.models.entities import (
     ApprovalRequest,
@@ -36,6 +37,7 @@ class InvoiceService:
         payable_account_id: UUID,
         input_tax_account_id: UUID | None = None,
     ) -> Invoice:
+        extraction = reconcile_extraction(extraction)
         inv_type = InvoiceType(extraction.invoice_type)
         party = self._get_or_create_party(ctx, extraction, inv_type)
         inv_number = extraction.invoice_number or "UNKNOWN"
@@ -108,6 +110,8 @@ class InvoiceService:
             return inv
         if inv.status != InvoiceStatus.pending_approval:
             raise ValidationError("Invoice is not pending approval")
+
+        self._reconcile_invoice(inv)
 
         if inv.invoice_type == InvoiceType.sales:
             lines, description = self._sales_journal_lines(
@@ -224,6 +228,26 @@ class InvoiceService:
                 }
             )
         return lines, f"Sales invoice {inv.invoice_number}"
+
+    def _reconcile_invoice(self, inv: Invoice) -> None:
+        from app.integrations.protocols import ExtractionLineItem
+
+        line_items = [
+            ExtractionLineItem(
+                description=item.description,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                tax_rate=item.tax_rate,
+                line_total=item.line_total,
+            )
+            for item in inv.line_items
+        ]
+        subtotal, tax_total, total = reconcile_amounts(
+            inv.subtotal, inv.tax_total, inv.total, line_items
+        )
+        inv.subtotal = subtotal
+        inv.tax_total = tax_total
+        inv.total = total
 
     def _get_or_create_party(
         self,
