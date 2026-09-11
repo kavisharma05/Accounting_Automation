@@ -41,6 +41,19 @@ def test_extraction_from_dict_parses_line_items():
     assert extraction.line_items[0].description == "Supplies"
 
 
+def test_parse_invoice_date_accepts_human_readable_format():
+    extraction = extraction_from_dict(
+        {
+            "invoice_date": "08 Sep 2026",
+            "subtotal": "1000",
+            "tax_total": "180",
+            "total": "1180",
+            "line_items": [],
+        }
+    )
+    assert extraction.invoice_date.isoformat() == "2026-09-08"
+
+
 def test_reconcile_amounts_uses_line_items_when_header_totals_mismatch():
     line_items = [
         ExtractionLineItem(

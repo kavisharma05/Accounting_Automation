@@ -1,6 +1,6 @@
 import json
 import re
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from app.integrations.protocols import DocumentExtraction, ExtractionLineItem
@@ -63,6 +63,24 @@ Return JSON only — no markdown or explanation.
 
 Extraction:
 """
+
+
+def _parse_invoice_date(value) -> date | None:
+    if not value:
+        return None
+    if isinstance(value, date):
+        return value
+    text = str(value).strip()
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        pass
+    for fmt in ("%d %b %Y", "%d-%B-%Y", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
 
 
 def _to_decimal(value, default: str = "0") -> Decimal:
@@ -144,12 +162,11 @@ def extraction_from_dict(data: dict) -> DocumentExtraction:
         )
         for i in data.get("line_items", [])
     ]
-    inv_date = data.get("invoice_date")
     return DocumentExtraction(
         vendor_name=data.get("vendor_name"),
         vendor_gstin=data.get("vendor_gstin"),
         invoice_number=data.get("invoice_number"),
-        invoice_date=date.fromisoformat(inv_date) if inv_date else None,
+        invoice_date=_parse_invoice_date(data.get("invoice_date")),
         invoice_type=data.get("invoice_type", "purchase"),
         subtotal=_to_decimal(data.get("subtotal", 0)),
         tax_total=_to_decimal(data.get("tax_total", 0)),
