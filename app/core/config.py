@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     s3_endpoint_url: str | None = None
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
+    aws_region: str = "eu-north-1"
 
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-4-20250514"

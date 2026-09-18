@@ -16,7 +16,8 @@ LOCAL_STORAGE_PATH=/tmp/documents
 # Persistent storage — S3 / Cloudflare R2 (uncomment for production)
 # STORAGE_PROVIDER=s3
 # S3_BUCKET=your-bucket-name
-# S3_ENDPOINT_URL=https://<account_id>.r2.cloudflarestorage.com
+# AWS_REGION=eu-north-1
+# S3_ENDPOINT_URL=
 # AWS_ACCESS_KEY_ID=
 # AWS_SECRET_ACCESS_KEY=
 GSP_PROVIDER=mock

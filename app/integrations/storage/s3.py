@@ -18,7 +18,8 @@ class S3StorageProvider(StorageProvider):
         self.bucket = settings.s3_bucket
         self.client = boto3.client(
             "s3",
-            endpoint_url=settings.s3_endpoint_url,
+            region_name=settings.aws_region or None,
+            endpoint_url=settings.s3_endpoint_url or None,
             aws_access_key_id=settings.aws_access_key_id,
             aws_secret_access_key=settings.aws_secret_access_key,
             config=BotoConfig(signature_version="s3v4"),
