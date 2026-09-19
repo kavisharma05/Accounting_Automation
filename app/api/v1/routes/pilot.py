@@ -178,6 +178,21 @@ def confirm_pending_invoice(org_id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(422, str(e)) from e
 
 
+@router.post("/organizations/{org_id}/invoices/{invoice_id}/reject")
+def reject_invoice(org_id: UUID, invoice_id: UUID, db: Session = Depends(get_db)):
+    ctx = OrganizationContext(organization_id=org_id)
+    try:
+        inv = InvoiceService(db).reject_pending(ctx, invoice_id)
+        db.commit()
+        return {"invoice_id": str(inv.id), "status": inv.status.value}
+    except NotFoundError as e:
+        db.rollback()
+        raise HTTPException(404, str(e)) from e
+    except ValidationError as e:
+        db.rollback()
+        raise HTTPException(422, str(e)) from e
+
+
 @router.post("/organizations/{org_id}/invoices/{invoice_id}/confirm")
 def confirm_invoice(org_id: UUID, invoice_id: UUID, db: Session = Depends(get_db)):
     try:

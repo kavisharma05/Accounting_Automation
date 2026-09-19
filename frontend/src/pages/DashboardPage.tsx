@@ -4,6 +4,7 @@ import {
   ApiError,
   confirmInvoice,
   downloadLedger,
+  rejectInvoice,
   fetchDashboard,
   fetchPendingInvoices,
   proposeInvoiceFromDocument,
@@ -68,10 +69,18 @@ export function DashboardPage() {
         session.token,
         uploaded.document_id,
       );
-      setSuccess(`Read the bill as ${proposed.invoice_number} — ${formatInr(proposed.total)}. Confirm to book it.`);
+      setSuccess(
+        `This is ${proposed.invoice_number} — ${formatInr(proposed.total)}. Confirm below to book it.`,
+      );
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not read that bill");
+      const message = err instanceof ApiError ? err.message : "Could not read that bill";
+      if (message.toLowerCase().includes("duplicate")) {
+        setError("This bill is already here. Confirm it below, or dismiss it and drop the photo again.");
+        await load();
+      } else {
+        setError(message);
+      }
     } finally {
       setBusy(false);
     }
@@ -87,6 +96,21 @@ export function DashboardPage() {
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not post that bill");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDismiss(invoiceId: string, invoiceNumber: string) {
+    if (!session || !canWrite) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await rejectInvoice(session.orgId, session.token, invoiceId);
+      setSuccess(`${invoiceNumber} dismissed. Drop the bill again if you want a fresh read.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not dismiss that bill");
     } finally {
       setBusy(false);
     }
@@ -168,14 +192,24 @@ export function DashboardPage() {
                 </div>
                 <div className="pending-total">{formatInr(inv.total)}</div>
                 {canWrite ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={busy}
-                    onClick={() => void handleConfirm(inv.invoice_id, inv.invoice_number, inv.total)}
-                  >
-                    Confirm
-                  </button>
+                  <div className="pending-actions">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      disabled={busy}
+                      onClick={() => void handleDismiss(inv.invoice_id, inv.invoice_number)}
+                    >
+                      Dismiss
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={busy}
+                      onClick={() => void handleConfirm(inv.invoice_id, inv.invoice_number, inv.total)}
+                    >
+                      Confirm
+                    </button>
+                  </div>
                 ) : null}
               </li>
             ))}

@@ -188,6 +188,11 @@ select {
   font-size: 1.15rem;
 }
 
+.pending-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .home-footnote {
   margin-top: 1.25rem;
   color: var(--muted);

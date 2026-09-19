@@ -61,9 +61,27 @@ def test_duplicate_invoice_rejected(db):
     payable = session.query(ChartOfAccount).filter_by(code="2000").first()
     gst = session.query(ChartOfAccount).filter_by(code="1400").first()
 
-    svc.create_from_extraction(
+    first = svc.create_from_extraction(
         ctx,
         extraction,
+        expense_account_id=expense.id,
+        payable_account_id=payable.id,
+        input_tax_account_id=gst.id,
+    )
+    session.commit()
+
+    again = svc.create_from_extraction(
+        ctx,
+        extraction,
+        expense_account_id=expense.id,
+        payable_account_id=payable.id,
+        input_tax_account_id=gst.id,
+    )
+    assert again.id == first.id
+
+    svc.confirm_and_post(
+        ctx,
+        first.id,
         expense_account_id=expense.id,
         payable_account_id=payable.id,
         input_tax_account_id=gst.id,

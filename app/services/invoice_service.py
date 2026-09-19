@@ -42,7 +42,13 @@ class InvoiceService:
         party = self._get_or_create_party(ctx, extraction, inv_type)
         inv_number = extraction.invoice_number or "UNKNOWN"
         inv_date = extraction.invoice_date or date.today()
-        self._check_duplicate_invoice(ctx, party.id, inv_number, inv_date)
+        existing = self._find_duplicate_invoice(ctx, party.id, inv_number, inv_date)
+        if existing:
+            if existing.status == InvoiceStatus.pending_approval:
+                return existing
+            raise ValidationError(
+                f"Duplicate invoice: {inv_number} from party on {inv_date}"
+            )
 
         inv = Invoice(
             organization_id=ctx.organization_id,
@@ -293,14 +299,33 @@ class InvoiceService:
             raise NotFoundError("Invoice not found")
         return inv
 
-    def _check_duplicate_invoice(
+    def reject_pending(self, ctx: OrganizationContext, invoice_id: UUID) -> Invoice:
+        inv = self._get_invoice(ctx, invoice_id)
+        if inv.status != InvoiceStatus.pending_approval:
+            raise ValidationError("Only a waiting bill can be dismissed")
+        inv.status = InvoiceStatus.cancelled
+        approval = (
+            self.db.query(ApprovalRequest)
+            .filter(
+                ApprovalRequest.entity_type == "invoice",
+                ApprovalRequest.entity_id == inv.id,
+                ApprovalRequest.status == "pending",
+            )
+            .first()
+        )
+        if approval:
+            approval.status = "rejected"
+        self.db.flush()
+        return inv
+
+    def _find_duplicate_invoice(
         self,
         ctx: OrganizationContext,
         party_id: UUID,
         invoice_number: str,
         invoice_date: date,
-    ) -> None:
-        existing = (
+    ) -> Invoice | None:
+        return (
             self.db.query(Invoice)
             .filter(
                 Invoice.organization_id == ctx.organization_id,
@@ -308,10 +333,7 @@ class InvoiceService:
                 Invoice.invoice_number == invoice_number,
                 Invoice.invoice_date == invoice_date,
                 Invoice.deleted_at.is_(None),
+                Invoice.status != InvoiceStatus.cancelled,
             )
             .first()
         )
-        if existing:
-            raise ValidationError(
-                f"Duplicate invoice: {invoice_number} from party on {invoice_date}"
-            )

@@ -498,6 +498,18 @@ export async function confirmInvoice(
   );
 }
 
+export async function rejectInvoice(
+  orgId: string,
+  token: string,
+  invoiceId: string,
+): Promise<{ invoice_id: string; status: string }> {
+  return request<{ invoice_id: string; status: string }>(
+    `/organizations/${orgId}/invoices/${invoiceId}/reject`,
+    { method: "POST" },
+    token,
+  );
+}
+
 export async function createDebitNote(orgId: string, token: string, payload: NotePayload) {
   return request<{ id: string; note_number: string; status: string }>(
     `/organizations/${orgId}/debit-notes`,
