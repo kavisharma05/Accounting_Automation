@@ -1,9 +1,13 @@
 from uuid import UUID
 
+import logging
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
+
+logger = logging.getLogger(__name__)
 from app.core.exceptions import DomainError, NotFoundError, ValidationError
 from app.core.logging import OrganizationContext
 from app.domain.organizations.pilot_config import configure_pilot_accounts, get_org_account_defaults
@@ -75,6 +79,8 @@ async def upload_document(
     ctx = OrganizationContext(organization_id=org_id)
     content = await file.read()
     mime = file.content_type or "application/octet-stream"
+    if content[:4] == b"%PDF":
+        mime = "application/pdf"
     doc_svc = DocumentService(db)
     doc = await doc_svc.upload(ctx, content, mime)
     db.commit()
@@ -104,7 +110,14 @@ async def propose_invoice_from_document(
 
     ctx = OrganizationContext(organization_id=org_id)
     doc_svc = DocumentService(db)
-    record = await doc_svc.extract(ctx, document_id)
+    try:
+        record = await doc_svc.extract(ctx, document_id)
+    except Exception as exc:
+        logger.exception("Bill extraction failed for document %s", document_id)
+        raise HTTPException(
+            422,
+            "Could not read that bill. Use a clear photo (JPG or PNG), or a one-page PDF.",
+        ) from exc
     extraction = extraction_from_dict(record.extracted_data)
 
     expense_id, payable_id, tax_id = get_org_account_defaults(db, org_id)

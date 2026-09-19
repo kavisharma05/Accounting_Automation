@@ -10,16 +10,14 @@ from app.integrations.document_understanding.parse import (
     extraction_from_dict,
     parse_json_from_llm_text,
 )
+from app.integrations.document_understanding.render import prepare_vision_input
 from app.integrations.protocols import DocumentExtraction
 
 logger = logging.getLogger(__name__)
 
 
 def _vision_message_content(content: bytes, mime_type: str) -> list[dict]:
-    if not mime_type.startswith("image/"):
-        raise ValueError(
-            f"NVIDIA vision extraction requires an image (jpeg/png/webp); got {mime_type}"
-        )
+    content, mime_type = prepare_vision_input(content, mime_type)
     b64 = base64.standard_b64encode(content).decode()
     return [
         {"type": "text", "text": EXTRACTION_PROMPT},
