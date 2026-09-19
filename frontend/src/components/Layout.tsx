@@ -13,59 +13,63 @@ export function Layout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          Accounting Automation
-          <span>{session.orgName}</span>
+          Books
+          <span>Photo in. Confirm. Done.</span>
         </div>
         <nav>
+          <div className="nav-label">Your day</div>
           <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}>
-            Overview
+            Home
           </NavLink>
           <NavLink
             to="/invoices"
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >
-            Invoices
+            Bills
           </NavLink>
           <NavLink
             to="/payments"
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >
-            Payments
+            Pay
           </NavLink>
           <NavLink
-            to="/sales"
+            to="/reports"
             className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
           >
-            Sales
+            Reports
           </NavLink>
-          <NavLink
-            to="/notes"
-            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
-          >
-            Notes
-          </NavLink>
-          <NavLink
-            to="/bank"
-            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
-          >
-            Bank
-          </NavLink>
-          <NavLink
-            to="/gstr"
-            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
-          >
-            GSTR
-          </NavLink>
-          <NavLink
-            to="/compliance"
-            className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
-          >
-            Compliance
-          </NavLink>
+          <details className="nav-more">
+            <summary>Accountant tools</summary>
+            <NavLink
+              to="/sales"
+              className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+            >
+              Sales
+            </NavLink>
+            <NavLink
+              to="/notes"
+              className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+            >
+              Notes
+            </NavLink>
+            <NavLink
+              to="/bank"
+              className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+            >
+              Bank
+            </NavLink>
+            <NavLink
+              to="/compliance"
+              className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
+            >
+              Compliance
+            </NavLink>
+          </details>
         </nav>
         <div className="sidebar-footer">
+          <div>{session.orgName}</div>
           <div>{session.email}</div>
-          <div>Role: {session.role}</div>
           {!canWrite ? <div className="muted-hint">Read-only access</div> : null}
           <button type="button" className="btn btn-secondary" onClick={logout} style={{ marginTop: "0.75rem" }}>
             Sign out

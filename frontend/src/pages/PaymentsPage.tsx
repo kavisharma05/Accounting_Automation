@@ -157,8 +157,8 @@ export function PaymentsPage() {
     <>
       <div className="page-header">
         <div>
-          <h1>Payments</h1>
-          <p>Record and view vendor payments</p>
+          <h1>Pay</h1>
+          <p>Mark a vendor bill paid. That is the only extra step after confirm.</p>
         </div>
         {canWrite ? (
           <button type="button" className="btn btn-primary" onClick={() => setShowForm(!showForm)}>

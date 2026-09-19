@@ -4,11 +4,11 @@ import { Layout } from "./components/Layout";
 import { BankPage } from "./pages/BankPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CompliancePage } from "./pages/CompliancePage";
-import { GstrPage } from "./pages/GstrPage";
 import { InvoicesPage } from "./pages/InvoicesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotesPage } from "./pages/NotesPage";
 import { PaymentsPage } from "./pages/PaymentsPage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { SalesPage } from "./pages/SalesPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -33,10 +33,11 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="invoices" element={<InvoicesPage />} />
         <Route path="payments" element={<PaymentsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="gstr" element={<Navigate to="/reports" replace />} />
         <Route path="sales" element={<SalesPage />} />
         <Route path="notes" element={<NotesPage />} />
         <Route path="bank" element={<BankPage />} />
-        <Route path="gstr" element={<GstrPage />} />
         <Route path="compliance" element={<CompliancePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

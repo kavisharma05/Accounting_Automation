@@ -40,8 +40,8 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1>Sign in</h1>
-        <p>Indian SMB accounting dashboard</p>
+        <h1>Books</h1>
+        <p>Send a bill photo. Confirm. The books update.</p>
         {error ? <div className="error-banner">{error}</div> : null}
         <form onSubmit={handleSubmit}>
           <div className="form-field">

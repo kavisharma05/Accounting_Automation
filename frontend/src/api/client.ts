@@ -453,12 +453,46 @@ export async function proposeInvoiceFromDocument(
   );
 }
 
+export type PendingInvoice = {
+  approval_id: string;
+  invoice_id: string;
+  invoice_number: string;
+  invoice_date?: string;
+  invoice_type?: string;
+  party_name?: string;
+  total: string;
+  status: string;
+};
+
+export async function fetchPendingInvoices(
+  orgId: string,
+  token: string,
+): Promise<PendingInvoice[]> {
+  return request<PendingInvoice[]>(
+    `/organizations/${orgId}/invoices/pending`,
+    {},
+    token,
+  );
+}
+
 export async function confirmPendingInvoice(
   orgId: string,
   token: string,
 ): Promise<ConfirmPendingResult> {
   return request<ConfirmPendingResult>(
     `/organizations/${orgId}/invoices/confirm-pending`,
+    { method: "POST" },
+    token,
+  );
+}
+
+export async function confirmInvoice(
+  orgId: string,
+  token: string,
+  invoiceId: string,
+): Promise<ConfirmPendingResult> {
+  return request<ConfirmPendingResult>(
+    `/organizations/${orgId}/invoices/${invoiceId}/confirm`,
     { method: "POST" },
     token,
   );

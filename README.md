@@ -44,7 +44,7 @@ cd frontend && npm install && npm run dev
 
 Open http://localhost:5173 — login with `admin@pilot.local` / `pilot-admin-change-me` (from seed script).
 
-**Screens:** Overview, Invoices, Payments, **Sales** (create/post/e-invoice), **Notes** (credit/debit), Bank, GSTR.
+**Screens:** Home (upload + confirm), Bills, Pay, Reports. Accountant tools: Sales, Notes, Bank, Compliance.
 
 **Production / Docker** — frontend is built into the API image and served at http://localhost:8000/:
 

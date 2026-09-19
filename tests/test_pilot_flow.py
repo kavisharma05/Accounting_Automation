@@ -55,9 +55,12 @@ def test_pilot_flow_end_to_end():
         pending = client.get(f"/api/v1/organizations/{org_id}/invoices/pending")
         assert pending.status_code == 200
         assert len(pending.json()) == 1
+        waiting = pending.json()[0]
+        assert waiting["invoice_number"]
+        assert "party_name" in waiting
 
         confirm = client.post(
-            f"/api/v1/organizations/{org_id}/invoices/confirm-pending",
+            f"/api/v1/organizations/{org_id}/invoices/{propose.json()['invoice_id']}/confirm",
             headers={"X-Organization-Id": org_id},
         )
         assert confirm.status_code == 200

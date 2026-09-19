@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ApiError,
-  confirmPendingInvoice,
+  confirmInvoice,
   fetchInvoices,
   proposeInvoiceFromDocument,
   searchInvoices,
@@ -31,6 +31,7 @@ export function InvoicesPage() {
   const [busy, setBusy] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [pendingProposal, setPendingProposal] = useState<{
+    invoice_id: string;
     invoice_number: string;
     total: string;
   } | null>(null);
@@ -71,11 +72,12 @@ export function InvoicesPage() {
         uploaded.document_id,
       );
       setPendingProposal({
+        invoice_id: proposed.invoice_id,
         invoice_number: proposed.invoice_number,
         total: proposed.total,
       });
       setSuccess(
-        `AI proposed ${proposed.invoice_number} for ${formatInr(proposed.total)} — confirm to post`,
+        `Read as ${proposed.invoice_number} for ${formatInr(proposed.total)} — confirm to book it`,
       );
       await load();
     } catch (err) {
@@ -86,12 +88,16 @@ export function InvoicesPage() {
   }
 
   async function handleConfirm() {
-    if (!session || !canWrite) return;
+    if (!session || !canWrite || !pendingProposal) return;
     setBusy(true);
     setError(null);
     try {
-      const posted = await confirmPendingInvoice(session.orgId, session.token);
-      setSuccess(`Posted to ledger — journal ${posted.journal_entry_id.slice(0, 8)}…`);
+      const posted = await confirmInvoice(
+        session.orgId,
+        session.token,
+        pendingProposal.invoice_id,
+      );
+      setSuccess(`Booked. Journal ${posted.journal_entry_id.slice(0, 8)}…`);
       setPendingProposal(null);
       setShowUpload(false);
       await load();
@@ -108,8 +114,8 @@ export function InvoicesPage() {
     <>
       <div className="page-header">
         <div>
-          <h1>Invoices</h1>
-          <p>Purchase and sales invoices with outstanding balances</p>
+          <h1>Bills</h1>
+          <p>Every bill we have read. Confirm new ones on Home.</p>
         </div>
         {canWrite ? (
           <button

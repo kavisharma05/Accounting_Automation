@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.core.exceptions import DomainError, ValidationError
+from app.core.exceptions import DomainError, NotFoundError, ValidationError
 from app.core.logging import OrganizationContext
 from app.domain.organizations.pilot_config import configure_pilot_accounts, get_org_account_defaults
-from app.models.entities import ApprovalRequest, Invoice
+from app.models.entities import ApprovalRequest, Invoice, Party
 from app.schemas.common import PilotConfigResponse, PilotConfigUpdate
 from app.services.document_service import DocumentService
 from app.services.invoice_service import InvoiceService
@@ -125,9 +125,25 @@ async def propose_invoice_from_document(
     }
 
 
+def _post_pending_invoice(db: Session, org_id: UUID, invoice_id: UUID) -> dict:
+    ctx = OrganizationContext(organization_id=org_id)
+    expense_id, payable_id, tax_id = get_org_account_defaults(db, org_id)
+    inv = InvoiceService(db).confirm_and_post(
+        ctx,
+        invoice_id,
+        expense_account_id=expense_id,
+        payable_account_id=payable_id,
+        input_tax_account_id=tax_id,
+    )
+    return {
+        "invoice_id": str(inv.id),
+        "journal_entry_id": str(inv.journal_entry_id),
+        "status": inv.status.value,
+    }
+
+
 @router.post("/organizations/{org_id}/invoices/confirm-pending")
 def confirm_pending_invoice(org_id: UUID, db: Session = Depends(get_db)):
-    ctx = OrganizationContext(organization_id=org_id)
     pending = (
         db.query(ApprovalRequest)
         .filter(
@@ -140,23 +156,24 @@ def confirm_pending_invoice(org_id: UUID, db: Session = Depends(get_db)):
     )
     if not pending:
         raise HTTPException(404, "No pending invoice approval")
-
-    expense_id, payable_id, tax_id = get_org_account_defaults(db, org_id)
-    inv_svc = InvoiceService(db)
     try:
-        inv = inv_svc.confirm_and_post(
-            ctx,
-            pending.entity_id,
-            expense_account_id=expense_id,
-            payable_account_id=payable_id,
-            input_tax_account_id=tax_id,
-        )
+        result = _post_pending_invoice(db, org_id, pending.entity_id)
         db.commit()
-        return {
-            "invoice_id": str(inv.id),
-            "journal_entry_id": str(inv.journal_entry_id),
-            "status": inv.status.value,
-        }
+        return result
+    except ValidationError as e:
+        db.rollback()
+        raise HTTPException(422, str(e)) from e
+
+
+@router.post("/organizations/{org_id}/invoices/{invoice_id}/confirm")
+def confirm_invoice(org_id: UUID, invoice_id: UUID, db: Session = Depends(get_db)):
+    try:
+        result = _post_pending_invoice(db, org_id, invoice_id)
+        db.commit()
+        return result
+    except NotFoundError as e:
+        db.rollback()
+        raise HTTPException(404, str(e)) from e
     except ValidationError as e:
         db.rollback()
         raise HTTPException(422, str(e)) from e
@@ -174,13 +191,19 @@ def list_pending_invoices(org_id: UUID, db: Session = Depends(get_db)):
         )
         .all()
     )
-    return [
-        {
-            "approval_id": str(a.id),
-            "invoice_id": str(i.id),
-            "invoice_number": i.invoice_number,
-            "total": str(i.total),
-            "status": i.status.value,
-        }
-        for a, i in pending
-    ]
+    rows = []
+    for approval, invoice in pending:
+        party = db.get(Party, invoice.party_id)
+        rows.append(
+            {
+                "approval_id": str(approval.id),
+                "invoice_id": str(invoice.id),
+                "invoice_number": invoice.invoice_number,
+                "invoice_date": invoice.invoice_date.isoformat(),
+                "invoice_type": invoice.invoice_type.value,
+                "party_name": party.name if party else "",
+                "total": str(invoice.total),
+                "status": invoice.status.value,
+            }
+        )
+    return rows
