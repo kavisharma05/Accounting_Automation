@@ -1,5 +1,13 @@
-import { useEffect, useState } from "react";
-import { ApiError, fetchInvoices, searchInvoices, type InvoiceRow } from "../api/client";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ApiError,
+  confirmPendingInvoice,
+  fetchInvoices,
+  proposeInvoiceFromDocument,
+  searchInvoices,
+  uploadDocument,
+  type InvoiceRow,
+} from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 
 const STATUSES = ["", "posted", "pending_approval", "draft", "cancelled"];
@@ -18,30 +26,81 @@ export function InvoicesPage() {
   const [status, setStatus] = useState("");
   const [searchQ, setSearchQ] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [pendingProposal, setPendingProposal] = useState<{
+    invoice_number: string;
+    total: string;
+  } | null>(null);
+
+  const canWrite =
+    session?.role === "owner" || session?.role === "accountant" || session?.role === "admin";
+
+  const load = useCallback(async () => {
+    if (!session) return;
+    setLoading(true);
+    try {
+      const data = searchQ.trim()
+        ? await searchInvoices(session.orgId, session.token, searchQ.trim())
+        : await fetchInvoices(session.orgId, session.token, status || undefined);
+      setInvoices(data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to load invoices");
+    } finally {
+      setLoading(false);
+    }
+  }, [session, status, searchQ]);
 
   useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const data = searchQ.trim()
-          ? await searchInvoices(session.orgId, session.token, searchQ.trim())
-          : await fetchInvoices(session.orgId, session.token, status || undefined);
-        if (!cancelled) setInvoices(data);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof ApiError ? err.message : "Failed to load invoices");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session, status, searchQ]);
+    load();
+  }, [load]);
+
+  async function handleUpload(file: File | null) {
+    if (!session || !canWrite || !file) return;
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    setPendingProposal(null);
+    try {
+      const uploaded = await uploadDocument(session.orgId, session.token, file);
+      const proposed = await proposeInvoiceFromDocument(
+        session.orgId,
+        session.token,
+        uploaded.document_id,
+      );
+      setPendingProposal({
+        invoice_number: proposed.invoice_number,
+        total: proposed.total,
+      });
+      setSuccess(
+        `AI proposed ${proposed.invoice_number} for ${formatInr(proposed.total)} — confirm to post`,
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Upload / extraction failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConfirm() {
+    if (!session || !canWrite) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const posted = await confirmPendingInvoice(session.orgId, session.token);
+      setSuccess(`Posted to ledger — journal ${posted.journal_entry_id.slice(0, 8)}…`);
+      setPendingProposal(null);
+      setShowUpload(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Confirm failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (!session) return null;
 
@@ -52,7 +111,57 @@ export function InvoicesPage() {
           <h1>Invoices</h1>
           <p>Purchase and sales invoices with outstanding balances</p>
         </div>
+        {canWrite ? (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowUpload(!showUpload)}
+          >
+            {showUpload ? "Cancel" : "Upload bill"}
+          </button>
+        ) : null}
       </div>
+
+      {success ? <div className="success-banner">{success}</div> : null}
+
+      {showUpload && canWrite ? (
+        <div className="panel form-panel">
+          <div className="panel-header">Capture a vendor bill</div>
+          <div className="form-grid">
+            <div className="form-field form-field-wide">
+              <label htmlFor="bill-file">Invoice photo or PDF</label>
+              <input
+                id="bill-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                disabled={busy}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  e.target.value = "";
+                  void handleUpload(file);
+                }}
+              />
+              <span className="field-hint">
+                {busy
+                  ? "Extracting fields and proposing a journal entry…"
+                  : "AI extracts GSTIN, amount, and lines. You confirm before anything posts."}
+              </span>
+            </div>
+            {pendingProposal ? (
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={busy}
+                  onClick={() => void handleConfirm()}
+                >
+                  Confirm & post {pendingProposal.invoice_number}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <div className="toolbar">
         <input

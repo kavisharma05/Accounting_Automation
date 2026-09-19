@@ -409,6 +409,61 @@ export async function postCreditNote(orgId: string, token: string, noteId: strin
   );
 }
 
+export type UploadDocumentResult = {
+  document_id: string;
+  sha256: string;
+};
+
+export type ProposedInvoiceResult = {
+  invoice_id: string;
+  invoice_number: string;
+  total: string;
+  status: string;
+};
+
+export type ConfirmPendingResult = {
+  invoice_id: string;
+  journal_entry_id: string;
+  status: string;
+};
+
+export async function uploadDocument(
+  orgId: string,
+  token: string,
+  file: File,
+): Promise<UploadDocumentResult> {
+  const form = new FormData();
+  form.append("file", file);
+  return request<UploadDocumentResult>(
+    `/organizations/${orgId}/documents/upload`,
+    { method: "POST", body: form },
+    token,
+  );
+}
+
+export async function proposeInvoiceFromDocument(
+  orgId: string,
+  token: string,
+  documentId: string,
+): Promise<ProposedInvoiceResult> {
+  return request<ProposedInvoiceResult>(
+    `/organizations/${orgId}/documents/${documentId}/propose-invoice`,
+    { method: "POST" },
+    token,
+  );
+}
+
+export async function confirmPendingInvoice(
+  orgId: string,
+  token: string,
+): Promise<ConfirmPendingResult> {
+  return request<ConfirmPendingResult>(
+    `/organizations/${orgId}/invoices/confirm-pending`,
+    { method: "POST" },
+    token,
+  );
+}
+
 export async function createDebitNote(orgId: string, token: string, payload: NotePayload) {
   return request<{ id: string; note_number: string; status: string }>(
     `/organizations/${orgId}/debit-notes`,

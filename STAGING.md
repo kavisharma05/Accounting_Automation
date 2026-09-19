@@ -43,7 +43,21 @@ Staging overlay (`docker-compose.staging.yml`) adds:
 | http://localhost:8000/docs | OpenAPI |
 | http://localhost:8000/api/v1/health/ready | Readiness probe |
 
-**Login:** `admin@pilot.local` / `pilot-admin-change-me`
+**Login:** `admin@pilot.local` / `pilot-admin-change-me` (change in prod — see below)
+
+**Production checks (no WhatsApp required):**
+
+```bash
+python scripts/verify_production.py --base-url https://accountingautomation-production.up.railway.app
+python scripts/pilot_ai_test.py --invoice scripts/real-gst-invoice.jpg --base-url https://accountingautomation-production.up.railway.app
+```
+
+**Change pilot admin password:** run inside the deployed API container (Railway → Accounting_Automation → Shell), not from your laptop — `DATABASE_URL` uses the private Postgres host:
+
+```bash
+python scripts/update_pilot_password.py --email admin@pilot.local --password 'YourNewPassword12!'
+python scripts/verify_production.py --login admin@pilot.local --password 'YourNewPassword12!'
+```
 
 ## Enable real adapters (optional)
 

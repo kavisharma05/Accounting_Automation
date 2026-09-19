@@ -11,9 +11,10 @@ SERVE_FRONTEND=true
 MESSAGING_PROVIDER=mock
 DOCUMENT_PROVIDER=mock
 STORAGE_PROVIDER=local
+# Ephemeral on Railway unless you attach a volume (pilot: /data/documents on API service).
 LOCAL_STORAGE_PATH=/tmp/documents
 
-# Persistent storage — S3 / Cloudflare R2 (uncomment for production)
+# Persistent storage — Cloudflare R2 (free tier, no AWS) or AWS S3
 # STORAGE_PROVIDER=s3
 # S3_BUCKET=your-bucket-name
 # AWS_REGION=eu-north-1

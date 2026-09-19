@@ -1,6 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import {
   ApiError,
+  createParty,
   createPayment,
   fetchAccounts,
   fetchInvoices,
@@ -44,6 +45,7 @@ export function PaymentsPage() {
   const [applyAmount, setApplyAmount] = useState("");
 
   const [tdsSection, setTdsSection] = useState("194C");
+  const [newVendorName, setNewVendorName] = useState("");
 
   const canWrite =
     session?.role === "owner" || session?.role === "accountant" || session?.role === "admin";
@@ -245,6 +247,45 @@ export function PaymentsPage() {
               <button type="submit" className="btn btn-primary" disabled={submitting}>
                 {submitting ? "Saving…" : "Save payment"}
               </button>
+            </div>
+          </form>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!session || !newVendorName.trim()) return;
+              setBusy(true);
+              setError(null);
+              try {
+                const party = await createParty(session.orgId, session.token, {
+                  name: newVendorName.trim(),
+                  party_type: "vendor",
+                });
+                setParties((prev) => [...prev, party]);
+                setPartyId(party.id);
+                setNewVendorName("");
+                setSuccess(`Vendor "${party.name}" added`);
+              } catch (err) {
+                setError(err instanceof ApiError ? err.message : "Failed to add vendor");
+              } finally {
+                setBusy(false);
+              }
+            }}
+            className="form-grid"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
+            <div className="form-field form-field-wide">
+              <label htmlFor="new-vendor">Quick add vendor</label>
+              <div className="inline-fields">
+                <input
+                  id="new-vendor"
+                  placeholder="Vendor name"
+                  value={newVendorName}
+                  onChange={(e) => setNewVendorName(e.target.value)}
+                />
+                <button type="submit" className="btn btn-secondary" disabled={busy}>
+                  Add vendor
+                </button>
+              </div>
             </div>
           </form>
         </div>

@@ -12,6 +12,7 @@ Indian SMB accounting automation: WhatsApp invoice capture, AI extraction, doubl
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture |
 | [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md) | Implementation design |
 | [PILOT.md](PILOT.md) | Pilot runbook |
+| [DEMO.md](DEMO.md) | Prototype screen-recording script |
 | [STAGING.md](STAGING.md) | Staging deployment (Docker) |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Production deployment |
 
