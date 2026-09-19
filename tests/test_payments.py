@@ -78,6 +78,20 @@ def payment_setup(db):
     return session, org, party, inv, payable, bank, ctx
 
 
+def test_mark_invoice_paid_clears_outstanding(payment_setup):
+    session, org, party, inv, payable, bank, ctx = payment_setup
+    svc = PaymentService(session)
+    payment = svc.mark_invoice_paid(
+        ctx,
+        inv.id,
+        payable_account_id=payable.id,
+        bank_account_id=bank.id,
+    )
+    session.commit()
+    assert payment.amount == Decimal("11800")
+    assert svc.invoice_outstanding(inv.id) == Decimal("0")
+
+
 def test_partial_payment(payment_setup):
     session, org, party, inv, payable, bank, ctx = payment_setup
     svc = PaymentService(session)

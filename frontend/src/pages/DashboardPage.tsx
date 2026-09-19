@@ -4,12 +4,16 @@ import {
   ApiError,
   confirmInvoice,
   downloadLedger,
-  rejectInvoice,
   fetchDashboard,
+  fetchInvoices,
   fetchPendingInvoices,
+  markInvoicePaid,
   proposeInvoiceFromDocument,
+  rejectInvoice,
+  updatePendingAmounts,
   uploadDocument,
   type DashboardSummary,
+  type InvoiceRow,
   type PendingInvoice,
 } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -19,14 +23,23 @@ function formatInr(value: string | number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(num);
+}
+
+function draftTotal(subtotal: string, tax: string) {
+  const a = parseFloat(subtotal);
+  const b = parseFloat(tax);
+  if (Number.isNaN(a) || Number.isNaN(b)) return "";
+  return (a + b).toFixed(2);
 }
 
 export function DashboardPage() {
   const { session } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [pending, setPending] = useState<PendingInvoice[]>([]);
+  const [unpaid, setUnpaid] = useState<InvoiceRow[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, { subtotal: string; taxTotal: string }>>({});
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,12 +53,30 @@ export function DashboardPage() {
     if (!session) return;
     setLoading(true);
     try {
-      const [dash, waiting] = await Promise.all([
+      const [dash, waiting, invoices] = await Promise.all([
         fetchDashboard(session.orgId, session.token),
         fetchPendingInvoices(session.orgId, session.token),
+        fetchInvoices(session.orgId, session.token, "posted"),
       ]);
       setSummary(dash);
       setPending(waiting);
+      setUnpaid(
+        invoices.filter(
+          (inv) => (inv.invoice_type ?? "purchase") === "purchase" && parseFloat(inv.outstanding) > 0,
+        ),
+      );
+      setDrafts((prev) => {
+        const next = { ...prev };
+        for (const inv of waiting) {
+          if (!next[inv.invoice_id]) {
+            next[inv.invoice_id] = {
+              subtotal: inv.subtotal ?? "",
+              taxTotal: inv.tax_total ?? "0",
+            };
+          }
+        }
+        return next;
+      });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load home");
     } finally {
@@ -70,7 +101,7 @@ export function DashboardPage() {
         uploaded.document_id,
       );
       setSuccess(
-        `This is ${proposed.invoice_number} — ${formatInr(proposed.total)}. Confirm below to book it.`,
+        `Check ${proposed.invoice_number} — ${formatInr(proposed.total)}. Fix the numbers if needed, then confirm.`,
       );
       await load();
     } catch (err) {
@@ -86,13 +117,18 @@ export function DashboardPage() {
     }
   }
 
-  async function handleConfirm(invoiceId: string, invoiceNumber: string, total: string) {
+  async function handleConfirm(inv: PendingInvoice) {
     if (!session || !canWrite) return;
+    const draft = drafts[inv.invoice_id] ?? { subtotal: inv.subtotal ?? "0", taxTotal: inv.tax_total ?? "0" };
     setBusy(true);
     setError(null);
     try {
-      await confirmInvoice(session.orgId, session.token, invoiceId);
-      setSuccess(`${invoiceNumber} is in the books. You owe ${formatInr(total)}.`);
+      const updated = await updatePendingAmounts(session.orgId, session.token, inv.invoice_id, {
+        subtotal: draft.subtotal || "0",
+        tax_total: draft.taxTotal || "0",
+      });
+      await confirmInvoice(session.orgId, session.token, inv.invoice_id);
+      setSuccess(`${inv.invoice_number} is in the books. You owe ${formatInr(updated.total)}.`);
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not post that bill");
@@ -116,6 +152,21 @@ export function DashboardPage() {
     }
   }
 
+  async function handleMarkPaid(inv: InvoiceRow) {
+    if (!session || !canWrite) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const paid = await markInvoicePaid(session.orgId, session.token, inv.id);
+      setSuccess(`${inv.invoice_number} marked paid — ${formatInr(paid.amount)}.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not mark that bill paid");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleExport() {
     if (!session) return;
     const blob = await downloadLedger(session.orgId, session.token);
@@ -134,9 +185,9 @@ export function DashboardPage() {
       <div className="page-header">
         <div>
           <h1>Home</h1>
-          <p>Send a bill photo. Confirm the numbers. The books update.</p>
+          <p>Send a bill photo. Check the numbers. Confirm. Mark paid when you pay.</p>
         </div>
-        <button type="button" className="btn btn-secondary" onClick={handleExport}>
+        <button type="button" className="btn btn-secondary" onClick={() => void handleExport()}>
           Send ledger to CA
         </button>
       </div>
@@ -169,7 +220,7 @@ export function DashboardPage() {
             }}
           />
           <strong>{busy ? "Reading the bill…" : "Drop a bill photo here, or click to upload"}</strong>
-          <span>Same as sending it on WhatsApp. Nothing is booked until you confirm.</span>
+          <span>Same as WhatsApp. Nothing is booked until you confirm.</span>
         </label>
       ) : null}
 
@@ -181,84 +232,156 @@ export function DashboardPage() {
           <div className="empty-state">No bills waiting. Upload one above.</div>
         ) : (
           <ul className="pending-list">
-            {pending.map((inv) => (
-              <li key={inv.invoice_id} className="pending-card">
-                <div>
-                  <div className="pending-vendor">{inv.party_name || "Vendor"}</div>
-                  <div className="pending-meta">
-                    {inv.invoice_number}
-                    {inv.invoice_date ? ` · ${inv.invoice_date}` : ""}
+            {pending.map((inv) => {
+              const draft = drafts[inv.invoice_id] ?? {
+                subtotal: inv.subtotal ?? "0",
+                taxTotal: inv.tax_total ?? "0",
+              };
+              const total = draftTotal(draft.subtotal, draft.taxTotal);
+              return (
+                <li key={inv.invoice_id} className="pending-card pending-card-review">
+                  <div>
+                    <div className="pending-vendor">{inv.party_name || "Vendor"}</div>
+                    <div className="pending-meta">
+                      {inv.invoice_number}
+                      {inv.invoice_date ? ` · ${inv.invoice_date}` : ""}
+                      {inv.party_gstin ? ` · GSTIN ${inv.party_gstin}` : ""}
+                    </div>
+                    <p className="pending-hint">
+                      Does this match the paper bill? Change a number if the read was wrong.
+                    </p>
+                    <div className="pending-amounts">
+                      <label>
+                        Taxable
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={draft.subtotal}
+                          disabled={busy}
+                          onChange={(e) =>
+                            setDrafts((prev) => ({
+                              ...prev,
+                              [inv.invoice_id]: { ...draft, subtotal: e.target.value },
+                            }))
+                          }
+                        />
+                      </label>
+                      <label>
+                        Tax
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={draft.taxTotal}
+                          disabled={busy}
+                          onChange={(e) =>
+                            setDrafts((prev) => ({
+                              ...prev,
+                              [inv.invoice_id]: { ...draft, taxTotal: e.target.value },
+                            }))
+                          }
+                        />
+                      </label>
+                      <div className="pending-total-block">
+                        <span>Total</span>
+                        <strong>{total ? formatInr(total) : "—"}</strong>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="pending-total">{formatInr(inv.total)}</div>
-                {canWrite ? (
-                  <div className="pending-actions">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      disabled={busy}
-                      onClick={() => void handleDismiss(inv.invoice_id, inv.invoice_number)}
-                    >
-                      Dismiss
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      disabled={busy}
-                      onClick={() => void handleConfirm(inv.invoice_id, inv.invoice_number, inv.total)}
-                    >
-                      Confirm
-                    </button>
-                  </div>
-                ) : null}
-              </li>
-            ))}
+                  {canWrite ? (
+                    <div className="pending-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        disabled={busy}
+                        onClick={() => void handleDismiss(inv.invoice_id, inv.invoice_number)}
+                      >
+                        Dismiss
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        disabled={busy || !total}
+                        onClick={() => void handleConfirm(inv)}
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
 
-      {summary ? (
-        <>
-          <div className="card-grid">
-            <div className="stat-card">
-              <div className="label">Unpaid bills</div>
-              <div className="value">{summary.outstanding_invoices_count}</div>
-            </div>
-            <div className="stat-card">
-              <div className="label">Still to pay</div>
-              <div className="value">{formatInr(summary.outstanding_total)}</div>
-            </div>
-          </div>
+      <div className="panel inbox-panel">
+        <div className="panel-header">Unpaid — mark paid when you pay the vendor</div>
+        {unpaid.length === 0 ? (
+          <div className="empty-state">No unpaid vendor bills.</div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>Bill</th>
+                <th>Still to pay</th>
+                {canWrite ? <th /> : null}
+              </tr>
+            </thead>
+            <tbody>
+              {unpaid.map((inv) => (
+                <tr key={inv.id}>
+                  <td>{inv.party_name || "Vendor"}</td>
+                  <td>{inv.invoice_number}</td>
+                  <td>{formatInr(inv.outstanding)}</td>
+                  {canWrite ? (
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        disabled={busy}
+                        onClick={() => void handleMarkPaid(inv)}
+                      >
+                        Mark paid
+                      </button>
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
-          <div className="panel">
-            <div className="panel-header">Just booked</div>
-            {summary.recent_journal_entries.length === 0 ? (
-              <div className="empty-state">Nothing in the books yet.</div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>What happened</th>
+      {summary ? (
+        <div className="panel">
+          <div className="panel-header">Just booked</div>
+          {summary.recent_journal_entries.length === 0 ? (
+            <div className="empty-state">Nothing in the books yet.</div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>What happened</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.recent_journal_entries.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{entry.entry_date}</td>
+                    <td>{entry.description}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {summary.recent_journal_entries.map((entry) => (
-                    <tr key={entry.id}>
-                      <td>{entry.entry_date}</td>
-                      <td>{entry.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       ) : null}
 
       <p className="home-footnote">
-        Paid a vendor? <Link to="/payments">Mark it paid</Link>
-        {" · "}
         Month-end GST for the CA? <Link to="/reports">Reports</Link>
       </p>
     </>

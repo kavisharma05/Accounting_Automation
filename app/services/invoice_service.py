@@ -299,6 +299,25 @@ class InvoiceService:
             raise NotFoundError("Invoice not found")
         return inv
 
+    def update_pending_amounts(
+        self,
+        ctx: OrganizationContext,
+        invoice_id: UUID,
+        *,
+        subtotal: Decimal,
+        tax_total: Decimal,
+    ) -> Invoice:
+        inv = self._get_invoice(ctx, invoice_id)
+        if inv.status != InvoiceStatus.pending_approval:
+            raise ValidationError("Only a waiting bill can be edited")
+        if subtotal < 0 or tax_total < 0:
+            raise ValidationError("Amounts cannot be negative")
+        inv.subtotal = subtotal
+        inv.tax_total = tax_total
+        inv.total = subtotal + tax_total
+        self.db.flush()
+        return inv
+
     def reject_pending(self, ctx: OrganizationContext, invoice_id: UUID) -> Invoice:
         inv = self._get_invoice(ctx, invoice_id)
         if inv.status != InvoiceStatus.pending_approval:

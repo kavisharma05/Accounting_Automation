@@ -70,6 +70,11 @@ def test_duplicate_invoice_rejected(db):
     )
     session.commit()
 
+    edited = svc.update_pending_amounts(
+        ctx, first.id, subtotal=Decimal("900"), tax_total=Decimal("162")
+    )
+    assert edited.total == Decimal("1062")
+
     again = svc.create_from_extraction(
         ctx,
         extraction,

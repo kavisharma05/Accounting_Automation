@@ -163,11 +163,58 @@ select {
 
 .pending-card {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   gap: 1rem;
   align-items: center;
   padding: 1rem 1.1rem;
   border-bottom: 1px solid var(--border);
+}
+
+.pending-card-review {
+  align-items: start;
+}
+
+.pending-hint {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.pending-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(110px, 160px));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.pending-amounts label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pending-amounts input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pending-total-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.pending-total-block strong {
+  font-size: 1.15rem;
+  color: var(--text);
 }
 
 .pending-card:last-child {

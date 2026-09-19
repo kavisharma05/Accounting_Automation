@@ -1,20 +1,27 @@
+import logging
+from decimal import Decimal
 from uuid import UUID
 
-import logging
-
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-
-logger = logging.getLogger(__name__)
 from app.core.exceptions import DomainError, NotFoundError, ValidationError
 from app.core.logging import OrganizationContext
 from app.domain.organizations.pilot_config import configure_pilot_accounts, get_org_account_defaults
-from app.models.entities import ApprovalRequest, Invoice, Party
+from app.models.entities import ApprovalRequest, ChartOfAccount, Invoice, Organization, Party
 from app.schemas.common import PilotConfigResponse, PilotConfigUpdate
 from app.services.document_service import DocumentService
 from app.services.invoice_service import InvoiceService
+from app.services.payment_service import PaymentService
+
+logger = logging.getLogger(__name__)
+
+
+class PendingAmountUpdate(BaseModel):
+    subtotal: str
+    tax_total: str
 
 router = APIRouter()
 
@@ -207,6 +214,71 @@ def confirm_invoice(org_id: UUID, invoice_id: UUID, db: Session = Depends(get_db
         raise HTTPException(422, str(e)) from e
 
 
+@router.patch("/organizations/{org_id}/invoices/{invoice_id}/pending-amounts")
+def update_pending_amounts(
+    org_id: UUID,
+    invoice_id: UUID,
+    body: PendingAmountUpdate,
+    db: Session = Depends(get_db),
+):
+    ctx = OrganizationContext(organization_id=org_id)
+    try:
+        inv = InvoiceService(db).update_pending_amounts(
+            ctx,
+            invoice_id,
+            subtotal=Decimal(body.subtotal),
+            tax_total=Decimal(body.tax_total),
+        )
+        db.commit()
+        return {
+            "invoice_id": str(inv.id),
+            "subtotal": str(inv.subtotal),
+            "tax_total": str(inv.tax_total),
+            "total": str(inv.total),
+            "status": inv.status.value,
+        }
+    except NotFoundError as e:
+        db.rollback()
+        raise HTTPException(404, str(e)) from e
+    except (ValidationError, ValueError) as e:
+        db.rollback()
+        raise HTTPException(422, str(e)) from e
+
+
+@router.post("/organizations/{org_id}/invoices/{invoice_id}/mark-paid")
+def mark_invoice_paid(org_id: UUID, invoice_id: UUID, db: Session = Depends(get_db)):
+    ctx = OrganizationContext(organization_id=org_id)
+    org = db.get(Organization, org_id)
+    if not org or not org.default_payable_account_id:
+        raise HTTPException(400, "Payable account is not set up")
+    bank = (
+        db.query(ChartOfAccount)
+        .filter(ChartOfAccount.organization_id == org_id, ChartOfAccount.code == "1010")
+        .first()
+    )
+    if not bank:
+        raise HTTPException(400, "Bank account 1010 is missing")
+    try:
+        payment = PaymentService(db).mark_invoice_paid(
+            ctx,
+            invoice_id,
+            payable_account_id=org.default_payable_account_id,
+            bank_account_id=bank.id,
+        )
+        db.commit()
+        return {
+            "payment_id": str(payment.id),
+            "amount": str(payment.amount),
+            "invoice_id": str(invoice_id),
+        }
+    except NotFoundError as e:
+        db.rollback()
+        raise HTTPException(404, str(e)) from e
+    except ValidationError as e:
+        db.rollback()
+        raise HTTPException(422, str(e)) from e
+
+
 @router.get("/organizations/{org_id}/invoices/pending")
 def list_pending_invoices(org_id: UUID, db: Session = Depends(get_db)):
     pending = (
@@ -230,6 +302,9 @@ def list_pending_invoices(org_id: UUID, db: Session = Depends(get_db)):
                 "invoice_date": invoice.invoice_date.isoformat(),
                 "invoice_type": invoice.invoice_type.value,
                 "party_name": party.name if party else "",
+                "party_gstin": party.gstin if party else None,
+                "subtotal": str(invoice.subtotal),
+                "tax_total": str(invoice.tax_total),
                 "total": str(invoice.total),
                 "status": invoice.status.value,
             }

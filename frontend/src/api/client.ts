@@ -460,6 +460,9 @@ export type PendingInvoice = {
   invoice_date?: string;
   invoice_type?: string;
   party_name?: string;
+  party_gstin?: string | null;
+  subtotal?: string;
+  tax_total?: string;
   total: string;
   status: string;
 };
@@ -505,6 +508,31 @@ export async function rejectInvoice(
 ): Promise<{ invoice_id: string; status: string }> {
   return request<{ invoice_id: string; status: string }>(
     `/organizations/${orgId}/invoices/${invoiceId}/reject`,
+    { method: "POST" },
+    token,
+  );
+}
+
+export async function updatePendingAmounts(
+  orgId: string,
+  token: string,
+  invoiceId: string,
+  body: { subtotal: string; tax_total: string },
+): Promise<{ invoice_id: string; subtotal: string; tax_total: string; total: string }> {
+  return request(
+    `/organizations/${orgId}/invoices/${invoiceId}/pending-amounts`,
+    { method: "PATCH", body: JSON.stringify(body) },
+    token,
+  );
+}
+
+export async function markInvoicePaid(
+  orgId: string,
+  token: string,
+  invoiceId: string,
+): Promise<{ payment_id: string; amount: string; invoice_id: string }> {
+  return request(
+    `/organizations/${orgId}/invoices/${invoiceId}/mark-paid`,
     { method: "POST" },
     token,
   );

@@ -33,6 +33,39 @@ class PaymentService:
         total_applied = sum(Decimal(str(a.amount_applied)) for a in applied)
         return Decimal(str(inv.total)) - total_applied
 
+    def mark_invoice_paid(
+        self,
+        ctx: OrganizationContext,
+        invoice_id: UUID,
+        *,
+        payable_account_id: UUID,
+        bank_account_id: UUID,
+        reference: str | None = None,
+    ) -> Payment:
+        inv = (
+            self.db.query(Invoice)
+            .filter(Invoice.id == invoice_id, Invoice.organization_id == ctx.organization_id)
+            .first()
+        )
+        if not inv:
+            raise NotFoundError("Invoice not found")
+        if inv.status != InvoiceStatus.posted:
+            raise ValidationError("Book the bill first, then mark it paid")
+        outstanding = self.invoice_outstanding(inv.id)
+        if outstanding <= 0:
+            raise ValidationError("This bill is already paid")
+        return self.create_and_post_payment(
+            ctx,
+            party_id=inv.party_id,
+            amount=outstanding,
+            payment_date=date.today(),
+            payable_account_id=payable_account_id,
+            bank_account_id=bank_account_id,
+            reference=reference or f"PAID-{inv.invoice_number}",
+            idempotency_key=f"mark-paid-{inv.id}",
+            applications=[{"invoice_id": inv.id, "amount_applied": str(outstanding)}],
+        )
+
     def create_and_post_payment(
         self,
         ctx: OrganizationContext,
