@@ -2,7 +2,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.routes.core import router as core_router
@@ -44,7 +44,16 @@ def create_app() -> FastAPI:
     if settings.serve_frontend:
         static_dir = Path(__file__).resolve().parent.parent / "frontend" / "dist"
         if static_dir.is_dir():
-            app.mount("/", StaticFiles(directory=static_dir, html=True), name="dashboard")
+            assets_dir = static_dir / "assets"
+            if assets_dir.is_dir():
+                app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+            @app.get("/{full_path:path}")
+            async def spa_fallback(full_path: str):
+                candidate = static_dir / full_path
+                if full_path and candidate.is_file():
+                    return FileResponse(candidate)
+                return FileResponse(static_dir / "index.html")
 
     return app
 
